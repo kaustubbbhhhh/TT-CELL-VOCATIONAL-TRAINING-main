@@ -45,29 +45,32 @@ TT-CELL-VOCATIONAL-TRAINING-main/
 ├── ttcell/                   # Frontend React Application
 │   ├── src/
 │   │   ├── api/
-│   │   │   ├── axiosInstance.js  # Axios client with automatic token refresh
-│   │   │   └── authApi.js        # Auth-related endpoints (login, forgot-password, reset-password)
+│   │   │   ├── axiosInstance.js  # Axios client with automatic token refresh (JWT)
+│   │   │   ├── authApi.js        # Auth-related endpoints (login, forgot-password, reset-password)
+│   │   │   └── portalApi.js      # Core business APIs (Trainees, Projects, Attendance, Analytics, Settings, Reports)
 │   │   ├── context/
 │   │   │   └── AuthContext.jsx   # Authentication context & state management
 │   │   ├── pages/
 │   │   │   ├── auth/             # Login, Forgot & Reset Password pages
-│   │   │   ├── admin/            # Admin Panel pages (Trainees, Projects, Attendance, etc.)
-│   │   │   └── student/          # Trainee Dashboard pages
+│   │   │   ├── admin/            # Admin Panel pages (Dashboard, Trainees, Projects, Attendance, Analytics, Settings, Reports, Repository)
+│   │   │   └── trainee/          # Trainee Dashboard pages (Dashboard, Profile, Attendance, Projects, Announcements)
 │   │   └── components/
+│   │       ├── UIComponents.jsx  # Styled reusable metric cards, charts, and grids
 │   │       └── Navigation.jsx    # Sidebar navigation & Layouts
 │   ├── vite.config.js        # Vite config with API reverse-proxy setup
 │   └── package.json          # Node dependencies & scripts
 │
 └── ttc_backend/              # Backend Django Application
     ├── apps/
-    │   ├── authentication/   # User models, authentication views, and service layer
-    │   ├── trainees/         # Trainee profiles & details management
+    │   ├── authentication/   # User models, authentication views, dashboard views, settings & analytics APIs
+    │   ├── trainees/         # Trainee profiles & details management (CSV import/CRUD)
     │   ├── projects/         # Project details, assignments, and histories
-    │   ├── attendance/       # Attendance logs
+    │   ├── attendance/       # Attendance logs & bulk-mark service
     │   └── announcements/    # Notifications & announcements
     ├── core/
     │   ├── db.py             # MongoEngine connection bootstrap
     │   ├── authentication.py # Django/DRF authentication backend bridge
+    │   ├── responses.py      # Standardized success/error API payloads
     │   └── exceptions.py     # Custom API exception formatting
     ├── middleware/
     │   └── jwt_middleware.py # RS256 Bearer cookie validation middleware
@@ -77,6 +80,27 @@ TT-CELL-VOCATIONAL-TRAINING-main/
     ├── requirements.txt      # Python dependencies
     └── manage.py             # Django CLI runner
 ```
+
+---
+
+## ⚡ Key Features
+
+### 👨‍💼 Admin Panel
+1. **Dashboard**: High-level real-time stats including total trainees, active projects, average attendance, at-risk trainee count, and a 6-week attendance history chart.
+2. **Trainee Management**: Complete CRUD operations, domain filter, text search, and a CSV bulk import utility.
+3. **Project Management**: Creation, deletion, scoring, archiving/unarchiving, and direct trainee assignments with optional deadline overrides.
+4. **Attendance Register**: Interactive, single-screen register to view or bulk-mark daily presence, absences, or leaves with custom notes.
+5. **Announcements Engine**: Internal messaging engine supporting drafts, priority coding (High/Medium/Low), target audience selection, and instant trainee broadcasts.
+6. **Analytics Portal**: In-depth analytical views displaying project completion rates, domain-wise score breakdowns, dropout rates, attendance distribution, and ranked top performers.
+7. **CSV Report Generator**: Real-time CSV generation and streaming downloads for critical reporting metrics, including Attendance Summaries, Project Progress, Cohort Performance, and MoD Compliance datasets.
+8. **Settings Configurations**: System-wide control panel to update organisation parameters (thresholds, timeout durations, academic year) and email alert triggers.
+
+### 🎓 Trainee Portal
+1. **Personal Dashboard**: Personal greeting, overall attendance percentage, completed/assigned project counters, composite standing score, current project status, and active announcements.
+2. **Profile & Documents**: Profile view displaying individual bio details and training tracks.
+3. **Attendance History**: Date-wise attendance logs, check-in timestamps, status tags, and leave logs.
+4. **Projects Hub**: Live track showing progress percentages, tech stacks, and individual scores for all assigned capstones.
+5. **Notifications**: Targeted notice board rendering priority-coded announcements published by administrators.
 
 ---
 
@@ -111,9 +135,9 @@ The application database is automatically created and named `ttcell_db`.
    python manage.py runserver 8000
    ```
 
-*To run tests on the backend, you can execute:*
+*To run tests on the backend, execute:*
 ```bash
-pytest
+venv\Scripts\pytest -v --tb=short
 ```
 
 ---
