@@ -59,3 +59,18 @@ class AuditLog(Document):
             '-timestamp',
         ]
     }
+
+class PortalSettings(Document):
+    org_name = StringField(default='TT Cell — Army Base Workshop')
+    batch_identifier = StringField(default='Batch 2024-B')
+    min_attendance_threshold = IntField(default=75)
+    academic_year = StringField(default='2024-2025')
+    email_at_risk_alerts = BooleanField(default=True)
+    daily_attendance_summary = BooleanField(default=True)
+    project_deadline_reminders = BooleanField(default=True)
+    new_trainee_registration_alerts = BooleanField(default=False)
+
+    meta = {
+        'collection': 'portal_settings'
+    }
+

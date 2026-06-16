@@ -2,7 +2,7 @@ import pytest
 import datetime
 from django.conf import settings
 from mongoengine import connect, disconnect
-from apps.authentication.models import User, RefreshToken, AuditLog
+from apps.authentication.models import User, RefreshToken, AuditLog, PortalSettings
 from apps.authentication.services import AuthService, hash_password
 from apps.trainees.models import Trainee
 from apps.projects.models import Project, ProjectAssignment
@@ -34,6 +34,8 @@ def clean_collections():
     ProjectAssignment.objects.delete()
     AttendanceRecord.objects.delete()
     Announcement.objects.delete()
+    PortalSettings.objects.delete()
+
 
 @pytest.fixture
 def admin_user():
