@@ -42,7 +42,8 @@ export function TraineesPage() {
     email: '',
     domain: 'AI/ML',
     batch: 'Batch 2024-B',
-    phone: ''
+    phone: '',
+    password: ''
   });
   
   // Feedback
@@ -87,6 +88,7 @@ export function TraineesPage() {
         severity: 'success' 
       });
       fetchTrainees();
+      window.dispatchEvent(new Event('dashboardStatsUpdated'));
     } catch (err) {
       console.error(err);
       setToast({ open: true, message: 'Failed to import CSV.', severity: 'error' });
@@ -112,9 +114,11 @@ export function TraineesPage() {
         email: '',
         domain: 'AI/ML',
         batch: 'Batch 2024-B',
-        phone: ''
+        phone: '',
+        password: ''
       });
       fetchTrainees();
+      window.dispatchEvent(new Event('dashboardStatsUpdated'));
     } catch (err) {
       console.error(err);
       const msg = err.response?.data?.message || 'Failed to create trainee.';
@@ -131,6 +135,7 @@ export function TraineesPage() {
       await traineesApi.delete(id);
       setToast({ open: true, message: 'Trainee soft-deleted successfully.', severity: 'success' });
       fetchTrainees();
+      window.dispatchEvent(new Event('dashboardStatsUpdated'));
     } catch (err) {
       console.error(err);
       setToast({ open: true, message: 'Failed to delete trainee.', severity: 'error' });
@@ -295,6 +300,15 @@ export function TraineesPage() {
             fullWidth 
             value={newTrainee.phone}
             onChange={e => setNewTrainee({...newTrainee, phone: e.target.value})}
+          />
+          <TextField 
+            label="Initial Password (Optional)" 
+            size="small" 
+            fullWidth 
+            type="text"
+            value={newTrainee.password}
+            onChange={e => setNewTrainee({...newTrainee, password: e.target.value})}
+            helperText="If blank, default password is used. Must contain 8+ chars, upper, lower, number, special."
           />
         </DialogContent>
         <DialogActions>
@@ -915,6 +929,7 @@ export function AnnouncementsPage() {
         is_draft: false
       });
       fetchAnnouncements();
+      window.dispatchEvent(new Event('dashboardStatsUpdated'));
     } catch (err) {
       console.error(err);
       setToast({ open: true, message: 'Failed to save announcement.', severity: 'error' });
@@ -929,6 +944,7 @@ export function AnnouncementsPage() {
       await announcementsApi.delete(id);
       setToast({ open: true, message: 'Announcement deleted successfully.', severity: 'success' });
       fetchAnnouncements();
+      window.dispatchEvent(new Event('dashboardStatsUpdated'));
     } catch (err) {
       console.error(err);
       setToast({ open: true, message: 'Failed to delete announcement.', severity: 'error' });

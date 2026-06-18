@@ -31,7 +31,8 @@ class JWTMiddleware:
         path = request.path
         
         # Check if the path is marked public (bypass JWT check)
-        is_public = any(path.startswith(p) for p in PUBLIC_PATHS)
+        normalized_path = path if path.endswith('/') else path + '/'
+        is_public = normalized_path in PUBLIC_PATHS
         if is_public:
             request.user = None
             return self.get_response(request)

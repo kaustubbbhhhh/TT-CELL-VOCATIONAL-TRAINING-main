@@ -4,7 +4,7 @@ import {
   Box, Grid, Card, CardContent, Typography, Button,
   Table, TableHead, TableBody, TableRow, TableCell,
   TableContainer, LinearProgress, Chip, CircularProgress,
-  Snackbar, Alert
+  Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, TextField
 } from '@mui/material';
 import {
   MetricCard, BarChart, AnnouncementCard,
@@ -13,6 +13,7 @@ import {
 } from '../../components/UIComponents';
 import { useAuth } from '../../context/AuthContext';
 import { dashboardApi, announcementsApi, attendanceApi } from '../../api/portalApi';
+import { authApi } from '../../api/authApi';
 
 // Helper to get initials
 function getInitials(name) {
@@ -244,6 +245,36 @@ export function TraineeProfile() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Password reset state
+  const [openPwdModal, setOpenPwdModal] = useState(false);
+  const [pwdData, setPwdData] = useState({ old_password: '', new_password: '', confirm_password: '' });
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [pwdError, setPwdError] = useState('');
+  const [pwdSuccess, setPwdSuccess] = useState(false);
+
+  const handlePwdChange = async () => {
+    setPwdError('');
+    if (pwdData.new_password !== pwdData.confirm_password) {
+      setPwdError("Passwords do not match");
+      return;
+    }
+    setPwdLoading(true);
+    try {
+      await authApi.changePassword(pwdData.old_password, pwdData.new_password, pwdData.confirm_password);
+      setPwdSuccess(true);
+      setTimeout(() => {
+        setOpenPwdModal(false);
+        setPwdSuccess(false);
+        setPwdData({ old_password: '', new_password: '', confirm_password: '' });
+        // Optional: you might want to reload page or trigger logout since sessions are revoked
+      }, 2000);
+    } catch (err) {
+      setPwdError(err.response?.data?.message || 'Failed to change password. Please check complexity requirements.');
+    } finally {
+      setPwdLoading(false);
+    }
+  };
+
   useEffect(() => {
     async function loadStats() {
       try {
@@ -292,6 +323,11 @@ export function TraineeProfile() {
               <InfoRow label="Roll Number" value={<Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.875rem' }}>{stats?.roll_number}</Typography>} />
               <InfoRow label="Email (Portal)" value={user?.email || ''} />
               <InfoRow label="Phone" value={stats?.phone || '—'} />
+              <Box sx={{ mt: 3 }}>
+                <Button variant="outlined" color="primary" onClick={() => setOpenPwdModal(true)}>
+                  Change Password
+                </Button>
+              </Box>
             </CardContent>
           </Card>
           <Card>
@@ -314,6 +350,40 @@ export function TraineeProfile() {
           </Card>
         </Grid>
       </Grid>
+
+      <Dialog open={openPwdModal} onClose={() => !pwdLoading && setOpenPwdModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Change Password</DialogTitle>
+        <DialogContent>
+          {pwdSuccess ? (
+            <Alert severity="success" sx={{ mt: 2 }}>Password updated successfully! You may need to log in again.</Alert>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+              {pwdError && <Alert severity="error">{pwdError}</Alert>}
+              <TextField
+                label="Old Password" type="password" fullWidth
+                value={pwdData.old_password} onChange={(e) => setPwdData({...pwdData, old_password: e.target.value})}
+              />
+              <TextField
+                label="New Password" type="password" fullWidth
+                value={pwdData.new_password} onChange={(e) => setPwdData({...pwdData, new_password: e.target.value})}
+                helperText="Must be at least 8 chars long with 1 uppercase, 1 lowercase, 1 number, and 1 special character."
+              />
+              <TextField
+                label="Confirm New Password" type="password" fullWidth
+                value={pwdData.confirm_password} onChange={(e) => setPwdData({...pwdData, confirm_password: e.target.value})}
+              />
+            </Box>
+          )}
+        </DialogContent>
+        {!pwdSuccess && (
+          <DialogActions>
+            <Button onClick={() => setOpenPwdModal(false)} disabled={pwdLoading}>Cancel</Button>
+            <Button onClick={handlePwdChange} variant="contained" disabled={pwdLoading}>
+              {pwdLoading ? <CircularProgress size={24} /> : 'Save New Password'}
+            </Button>
+          </DialogActions>
+        )}
+      </Dialog>
     </Box>
   );
 }

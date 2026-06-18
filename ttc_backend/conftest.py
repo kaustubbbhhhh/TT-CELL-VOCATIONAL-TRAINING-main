@@ -26,15 +26,15 @@ def mongo_connection():
 @pytest.fixture(autouse=True)
 def clean_collections():
     """Clear all MongoDB collections between test runs to ensure isolation."""
-    User.objects.delete()
-    RefreshToken.objects.delete()
-    AuditLog.objects.delete()
-    Trainee.objects.delete()
-    Project.objects.delete()
-    ProjectAssignment.objects.delete()
-    AttendanceRecord.objects.delete()
-    Announcement.objects.delete()
-    PortalSettings.objects.delete()
+    User.drop_collection()
+    RefreshToken.drop_collection()
+    AuditLog.drop_collection()
+    Trainee.drop_collection()
+    Project.drop_collection()
+    ProjectAssignment.drop_collection()
+    AttendanceRecord.drop_collection()
+    Announcement.drop_collection()
+    PortalSettings.drop_collection()
 
 
 @pytest.fixture

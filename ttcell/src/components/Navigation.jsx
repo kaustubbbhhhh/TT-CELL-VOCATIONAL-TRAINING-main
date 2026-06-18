@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   AppBar, Toolbar, Box, Typography, Button, IconButton,
@@ -19,6 +19,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import PersonIcon from '@mui/icons-material/Person';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '../context/AuthContext';
+import { dashboardApi } from '../api/portalApi';
 
 // ── Logo ──────────────────────────────────────────────────────
 const Logo = ({ onClick }) => (
@@ -85,10 +86,10 @@ const adminNav = [
   { section: 'Overview' },
   { label: 'Executive Dashboard', icon: <DashboardIcon fontSize="small" />, path: '/admin' },
   { section: 'Management' },
-  { label: 'Trainees', icon: <PeopleIcon fontSize="small" />, path: '/admin/trainees', badge: 142 },
+  { label: 'Trainees', icon: <PeopleIcon fontSize="small" />, path: '/admin/trainees' },
   { label: 'Projects', icon: <FolderIcon fontSize="small" />, path: '/admin/projects' },
   { label: 'Attendance', icon: <CalendarTodayIcon fontSize="small" />, path: '/admin/attendance' },
-  { label: 'Announcements', icon: <CampaignIcon fontSize="small" />, path: '/admin/announcements', badge: 3 },
+  { label: 'Announcements', icon: <CampaignIcon fontSize="small" />, path: '/admin/announcements' },
   { section: 'Intelligence' },
   { label: 'Analytics', icon: <BarChartIcon fontSize="small" />, path: '/admin/analytics' },
   { label: 'Reports', icon: <AssessmentIcon fontSize="small" />, path: '/admin/reports' },
@@ -103,7 +104,7 @@ const traineeNav = [
   { label: 'My Profile', icon: <PersonIcon fontSize="small" />, path: '/trainee/profile' },
   { label: 'Attendance', icon: <CalendarTodayIcon fontSize="small" />, path: '/trainee/attendance' },
   { label: 'My Projects', icon: <FolderIcon fontSize="small" />, path: '/trainee/projects' },
-  { label: 'Announcements', icon: <CampaignIcon fontSize="small" />, path: '/trainee/announcements', badge: 3 },
+  { label: 'Announcements', icon: <CampaignIcon fontSize="small" />, path: '/trainee/announcements' },
 ];
 
 const SidebarContent = ({ navItems, user, onLogout }) => {
@@ -172,7 +173,46 @@ export const PortalLayout = ({ children }) => {
   const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const isAdmin = user?.role === 'admin';
-  const navItems = isAdmin ? adminNav : traineeNav;
+  
+  const [badgeStats, setBadgeStats] = useState({ trainees: null, announcements: null });
+
+  useEffect(() => {
+    async function fetchBadges() {
+      try {
+        if (isAdmin) {
+          const res = await dashboardApi.getStats();
+          setBadgeStats({
+            trainees: res.data?.total_trainees,
+            announcements: res.data?.total_announcements
+          });
+        } else if (user?.trainee_id) {
+          const res = await dashboardApi.getTraineeStats(user.trainee_id);
+          setBadgeStats({
+            trainees: null,
+            announcements: res.data?.total_announcements
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch badge stats", err);
+      }
+    }
+    if (user) {
+      fetchBadges();
+    }
+
+    const handleUpdate = () => fetchBadges();
+    window.addEventListener('dashboardStatsUpdated', handleUpdate);
+
+    return () => {
+      window.removeEventListener('dashboardStatsUpdated', handleUpdate);
+    };
+  }, [user, isAdmin]);
+
+  const navItems = (isAdmin ? adminNav : traineeNav).map(item => {
+    if (item.label === 'Trainees' && badgeStats.trainees > 0) return { ...item, badge: badgeStats.trainees };
+    if (item.label === 'Announcements' && badgeStats.announcements > 0) return { ...item, badge: badgeStats.announcements };
+    return item;
+  });
 
   const handleLogout = () => { logout(); navigate('/'); };
 

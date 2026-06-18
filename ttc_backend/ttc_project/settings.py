@@ -10,7 +10,9 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-ttcell-vocational-tra
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+# Securely load allowed hosts, fallback to localhost for dev
+allowed_hosts_env = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,testserver')
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',') if host.strip()]
 
 INSTALLED_APPS = [
     'django.contrib.contenttypes',
@@ -70,3 +72,26 @@ JWT_PRIVATE_KEY_PATH = str(BASE_DIR / 'jwt_private.pem')
 
 # Default Auto Field
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# -----------------------------------------------------------------------------
+# TRANSPORT SECURITY (HTTPS / SSL)
+# -----------------------------------------------------------------------------
+if not DEBUG:
+    # Ensure Django knows it's behind a secure proxy (Nginx/Cloudflare)
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    
+    # Force HTTP -> HTTPS redirect
+    SECURE_SSL_REDIRECT = True
+    
+    # HTTP Strict Transport Security (HSTS)
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # Browser Security Headers
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    
+    # Cookie Security
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
