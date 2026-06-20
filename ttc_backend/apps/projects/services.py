@@ -159,7 +159,7 @@ class ProjectService:
 
         for tid in trainee_ids:
             try:
-                trainee = Trainee.objects.get(id=tid, is_active=True)
+                trainee = Trainee.objects.get(pk=tid, is_active=True)
             except:
                 warnings.append(f"Trainee ID '{tid}' not found or inactive. Skipping.")
                 skipped_count += 1
@@ -208,7 +208,7 @@ class ProjectService:
             raise NotFoundError("Project not found.")
 
         try:
-            trainee = Trainee.objects.get(id=trainee_id)
+            trainee = Trainee.objects.get(pk=trainee_id)
         except:
             raise NotFoundError("Trainee not found.")
 

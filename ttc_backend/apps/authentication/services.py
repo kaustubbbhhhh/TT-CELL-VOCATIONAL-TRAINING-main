@@ -4,6 +4,7 @@ import secrets
 import bcrypt
 import jwt
 from django.conf import settings
+from django.contrib.auth.hashers import check_password as check_django_password
 from django.utils import timezone
 from apps.authentication.models import User, RefreshToken, AuditLog
 from core.exceptions import AuthenticationFailed, LockoutError, ValidationError, NotFoundError
@@ -11,6 +12,11 @@ from core.exceptions import AuthenticationFailed, LockoutError, ValidationError,
 # JWT Configurations
 ACCESS_TOKEN_LIFETIME = datetime.timedelta(minutes=15)
 REFRESH_TOKEN_LIFETIME = datetime.timedelta(days=7)
+BCRYPT_PREFIXES = ('$2a$', '$2b$', '$2y$')
+
+def is_bcrypt_hash(hashed: str) -> bool:
+    """Return whether a stored password uses this app's bcrypt format."""
+    return isinstance(hashed, str) and hashed.startswith(BCRYPT_PREFIXES)
 
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
@@ -19,8 +25,20 @@ def hash_password(password: str) -> str:
     return hashed.decode('utf-8')
 
 def check_password(password: str, hashed: str) -> bool:
-    """Check if password matches bcrypt hash."""
-    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+    """Check if password matches bcrypt or a supported legacy Django hash."""
+    if not isinstance(password, str) or not isinstance(hashed, str) or not hashed:
+        return False
+
+    if is_bcrypt_hash(hashed):
+        try:
+            return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+        except ValueError:
+            return False
+
+    try:
+        return check_django_password(password, hashed)
+    except (TypeError, ValueError):
+        return False
 
 class AuthService:
     """Service class encapsulating authentication, token management, and account security."""
@@ -131,6 +149,8 @@ class AuthService:
             raise AuthenticationFailed("Invalid email or password.")
 
         # Success - reset failed attempts
+        if not is_bcrypt_hash(user.password_hash):
+            user.password_hash = hash_password(password)
         user.failed_attempts = 0
         user.locked_until = None
         user.save()

@@ -83,7 +83,7 @@ class TraineeDetailView(APIView):
         from mongoengine.errors import DoesNotExist, ValidationError as MEValidationError
         from core.exceptions import NotFoundError
         try:
-            obj = Trainee.objects.get(id=pk)
+            obj = Trainee.objects.get(pk=pk)
         except (DoesNotExist, MEValidationError):
             raise NotFoundError("Trainee not found.")
         # Perform object-level permission check — let PermissionDenied propagate

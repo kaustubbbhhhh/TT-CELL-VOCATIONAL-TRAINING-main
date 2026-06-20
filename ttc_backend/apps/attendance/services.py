@@ -27,7 +27,7 @@ class AttendanceService:
                         session_name: str, time_in: str = None, leave_type: str = None, notes: str = None) -> AttendanceRecord:
         """Mark or update a trainee's attendance for a specific date."""
         try:
-            trainee = Trainee.objects.get(id=trainee_id, is_active=True)
+            trainee = Trainee.objects.get(pk=trainee_id, is_active=True)
         except:
             raise NotFoundError("Trainee not found.")
 

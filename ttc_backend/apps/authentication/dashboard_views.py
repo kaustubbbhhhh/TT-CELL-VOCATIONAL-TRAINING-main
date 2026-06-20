@@ -139,7 +139,7 @@ class TraineeDashboardStatsView(APIView):
             raise Forbidden("You are not authorized to view this trainee's stats.")
 
         try:
-            trainee = Trainee.objects.get(id=trainee_id)
+            trainee = Trainee.objects.get(pk=trainee_id)
         except:
             raise NotFoundError("Trainee not found.")
 

@@ -1,8 +1,5 @@
 import csv
 import io
-import os
-from django.conf import settings
-from mongoengine.errors import NotUniqueError
 from apps.trainees.models import Trainee, DOMAINS
 from apps.authentication.models import User, AuditLog, RefreshToken
 from apps.authentication.services import AuthService
@@ -10,6 +7,14 @@ from core.exceptions import ValidationError, ConflictError, NotFoundError
 
 class TraineeService:
     """Service class handling Trainee operations and user account provisioning."""
+
+    @staticmethod
+    def _build_default_password(full_name: str, roll_number: str) -> str:
+        """Build the initial trainee password from the trainee's name and roll number."""
+        # Remove spaces and lowercase letters for predictability
+        name_part = ''.join(full_name.split()).lower() if full_name else ''
+        roll_part = ''.join(roll_number.split()).lower() if roll_number else ''
+        return f"{name_part}{roll_part}"
 
     @staticmethod
     def create_trainee(actor_id: str, data: dict) -> Trainee:
@@ -43,7 +48,7 @@ class TraineeService:
         trainee.save()
 
         # Provision Auth User
-        default_pwd = os.environ.get('DEFAULT_TRAINEE_PASSWORD', 'ChangeMeOnFirstLogin!')
+        default_pwd = TraineeService._build_default_password(full_name, roll_number)
         try:
             AuthService.create_user(
                 email=email,
@@ -72,7 +77,7 @@ class TraineeService:
     def update_trainee(actor_id: str, trainee_id: str, data: dict) -> Trainee:
         """Update trainee details, keeping linked User credentials in sync."""
         try:
-            trainee = Trainee.objects.get(id=trainee_id, is_active=True)
+            trainee = Trainee.objects.get(pk=trainee_id, is_active=True)
         except:
             raise NotFoundError("Trainee not found.")
 
@@ -141,7 +146,7 @@ class TraineeService:
     def soft_delete_trainee(actor_id: str, trainee_id: str):
         """Soft delete trainee and deactivate linked User credentials."""
         try:
-            trainee = Trainee.objects.get(id=trainee_id, is_active=True)
+            trainee = Trainee.objects.get(pk=trainee_id, is_active=True)
         except:
             raise NotFoundError("Trainee not found.")
 

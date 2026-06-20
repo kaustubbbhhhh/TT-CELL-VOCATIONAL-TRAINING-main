@@ -216,7 +216,7 @@ def create_guide():
     row2 = table.rows[2].cells
     row2[0].text = 'Trainee'
     row2[1].text = 'trainee@ttcell'
-    row2[2].text = 'ChangeMeOnFirstLogin!'
+    row2[2].text = 'Their Name + Roll Number'
 
     # Save
     out_path = os.path.join("d:\\TT-CELL-VOCATIONAL-TRAINING-main", "run guide.docx")

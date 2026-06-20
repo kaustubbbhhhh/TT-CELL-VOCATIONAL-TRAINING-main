@@ -78,7 +78,7 @@ def test_soft_delete_trainee(auth_headers_admin, trainee_doc, trainee_user):
     assert response.status_code == 200
     
     # Check soft deleted
-    t = Trainee.objects.get(id=trainee_doc.id)
+    t = Trainee.objects.get(pk=trainee_doc.id)
     assert t.is_active is False
     
     # Check associated user deactivated

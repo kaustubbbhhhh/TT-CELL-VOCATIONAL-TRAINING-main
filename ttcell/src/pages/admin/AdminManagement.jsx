@@ -33,7 +33,7 @@ export function TraineesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [domain, setDomain] = useState('All');
-  
+
   // Modal states
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newTrainee, setNewTrainee] = useState({
@@ -43,9 +43,8 @@ export function TraineesPage() {
     domain: 'AI/ML',
     batch: 'Batch 2024-B',
     phone: '',
-    password: ''
   });
-  
+
   // Feedback
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
 
@@ -55,7 +54,7 @@ export function TraineesPage() {
       const params = {};
       if (domain !== 'All') params.domain = domain;
       if (search.trim()) params.q = search;
-      
+
       const res = await traineesApi.list(params);
       setTrainees(res.data.results || res.data || []);
     } catch (err) {
@@ -82,10 +81,10 @@ export function TraineesPage() {
     try {
       setLoading(true);
       const res = await traineesApi.bulkImport(file);
-      setToast({ 
-        open: true, 
-        message: `Import complete: Created ${res.data.created}, skipped ${res.data.skipped} due to validation errors.`, 
-        severity: 'success' 
+      setToast({
+        open: true,
+        message: `Import complete: Created ${res.data.created}, skipped ${res.data.skipped} due to validation errors.`,
+        severity: 'success'
       });
       fetchTrainees();
       window.dispatchEvent(new Event('dashboardStatsUpdated'));
@@ -115,7 +114,6 @@ export function TraineesPage() {
         domain: 'AI/ML',
         batch: 'Batch 2024-B',
         phone: '',
-        password: ''
       });
       fetchTrainees();
       window.dispatchEvent(new Event('dashboardStatsUpdated'));
@@ -162,14 +160,14 @@ export function TraineesPage() {
 
       {/* Filters */}
       <Box sx={{ display: 'flex', gap: 1.25, mb: 2.5, flexWrap: 'wrap' }}>
-        <TextField 
-          size="small" 
-          placeholder="Search by name, roll number (press Enter)..." 
-          value={search} 
+        <TextField
+          size="small"
+          placeholder="Search by name, roll number (press Enter)..."
+          value={search}
           onChange={e => setSearch(e.target.value)}
           onKeyPress={handleSearchKeyPress}
           sx={{ flex: 1, minWidth: 220 }}
-          InputProps={{ 
+          InputProps={{
             startAdornment: (
               <InputAdornment position="start">
                 <SearchIcon sx={{ fontSize: 18, color: '#7A8B99' }} onClick={fetchTrainees} style={{ cursor: 'pointer' }} />
@@ -225,10 +223,10 @@ export function TraineesPage() {
                         <TableCell>{s.phone || '—'}</TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', gap: 0.5 }}>
-                            <Button 
-                              variant="outlined" 
-                              color="error" 
-                              size="small" 
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              size="small"
                               sx={{ fontSize: '0.72rem', py: 0.5, px: 1.25 }}
                               onClick={() => handleDeleteTrainee(s.id)}
                             >
@@ -256,59 +254,50 @@ export function TraineesPage() {
       <Dialog open={isAddOpen} onClose={() => setIsAddOpen(false)}>
         <DialogTitle sx={{ fontWeight: 800 }}>Add New Trainee</DialogTitle>
         <DialogContent sx={{ display: 'grid', gap: 2, pt: 1, minWidth: 320 }}>
-          <TextField 
-            label="Roll Number *" 
-            size="small" 
-            fullWidth 
+          <TextField
+            label="Roll Number *"
+            size="small"
+            fullWidth
             value={newTrainee.roll_number}
-            onChange={e => setNewTrainee({...newTrainee, roll_number: e.target.value})}
+            onChange={e => setNewTrainee({ ...newTrainee, roll_number: e.target.value })}
           />
-          <TextField 
-            label="Full Name *" 
-            size="small" 
-            fullWidth 
+          <TextField
+            label="Full Name *"
+            size="small"
+            fullWidth
             value={newTrainee.full_name}
-            onChange={e => setNewTrainee({...newTrainee, full_name: e.target.value})}
+            onChange={e => setNewTrainee({ ...newTrainee, full_name: e.target.value })}
           />
-          <TextField 
-            label="Email Address *" 
-            size="small" 
-            fullWidth 
+          <TextField
+            label="Email Address *"
+            size="small"
+            fullWidth
             value={newTrainee.email}
-            onChange={e => setNewTrainee({...newTrainee, email: e.target.value})}
+            onChange={e => setNewTrainee({ ...newTrainee, email: e.target.value })}
           />
           <FormControl size="small" fullWidth>
             <InputLabel>Domain</InputLabel>
-            <Select 
-              value={newTrainee.domain} 
+            <Select
+              value={newTrainee.domain}
               label="Domain"
-              onChange={e => setNewTrainee({...newTrainee, domain: e.target.value})}
+              onChange={e => setNewTrainee({ ...newTrainee, domain: e.target.value })}
             >
               {['AI/ML', 'Web Dev', 'Cyber Sec', 'Data Sci', 'IoT', 'Embedded'].map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
             </Select>
           </FormControl>
-          <TextField 
-            label="Batch Code *" 
-            size="small" 
-            fullWidth 
+          <TextField
+            label="Batch Code *"
+            size="small"
+            fullWidth
             value={newTrainee.batch}
-            onChange={e => setNewTrainee({...newTrainee, batch: e.target.value})}
+            onChange={e => setNewTrainee({ ...newTrainee, batch: e.target.value })}
           />
-          <TextField 
-            label="Phone Number" 
-            size="small" 
-            fullWidth 
+          <TextField
+            label="Phone Number"
+            size="small"
+            fullWidth
             value={newTrainee.phone}
-            onChange={e => setNewTrainee({...newTrainee, phone: e.target.value})}
-          />
-          <TextField 
-            label="Initial Password (Optional)" 
-            size="small" 
-            fullWidth 
-            type="text"
-            value={newTrainee.password}
-            onChange={e => setNewTrainee({...newTrainee, password: e.target.value})}
-            helperText="If blank, default password is used. Must contain 8+ chars, upper, lower, number, special."
+            onChange={e => setNewTrainee({ ...newTrainee, phone: e.target.value })}
           />
         </DialogContent>
         <DialogActions>
@@ -317,8 +306,8 @@ export function TraineesPage() {
         </DialogActions>
       </Dialog>
 
-      <Snackbar open={toast.open} autoHideDuration={4000} onClose={() => setToast({...toast, open: false})}>
-        <Alert severity={toast.severity} onClose={() => setToast({...toast, open: false})}>{toast.message}</Alert>
+      <Snackbar open={toast.open} autoHideDuration={4000} onClose={() => setToast({ ...toast, open: false })}>
+        <Alert severity={toast.severity} onClose={() => setToast({ ...toast, open: false })}>{toast.message}</Alert>
       </Snackbar>
     </Box>
   );
@@ -333,7 +322,7 @@ export function ProjectsPage() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
-  
+
   // Assignment Modal
   const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [trainees, setTrainees] = useState([]);
@@ -454,8 +443,8 @@ export function ProjectsPage() {
   return (
     <Box>
       <Breadcrumb items={[{ label: 'Dashboard', onClick: () => navigate('/admin') }, { label: 'Projects' }]} />
-      <PageHeader 
-        title="Project Management" 
+      <PageHeader
+        title="Project Management"
         subtitle={`${projects.length} capstone projects registered across domains`}
         actions={
           <>
@@ -478,15 +467,15 @@ export function ProjectsPage() {
                       <Typography variant="caption">{p.project_code} · Team of {p.team} · {p.domain} Domain</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center' }}>
-                      <Chip 
-                        label={statusLabels[p.status] || p.status} 
-                        size="small" 
-                        sx={{ 
-                          background: `${statusColors[p.status]}22`, 
-                          color: statusColors[p.status], 
-                          fontWeight: 700, 
-                          fontSize: '0.7rem' 
-                        }} 
+                      <Chip
+                        label={statusLabels[p.status] || p.status}
+                        size="small"
+                        sx={{
+                          background: `${statusColors[p.status]}22`,
+                          color: statusColors[p.status],
+                          fontWeight: 700,
+                          fontSize: '0.7rem'
+                        }}
                       />
                       {p.score !== undefined && p.score !== null && (
                         <Chip label={`Score: ${p.score}/100`} size="small" sx={{ background: '#EEF2E8', color: '#4A6331', fontWeight: 700, fontSize: '0.7rem' }} />
@@ -503,14 +492,14 @@ export function ProjectsPage() {
                       <Typography variant="caption">Progress</Typography>
                       <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: statusColors[p.status] || '#4A6331' }}>{p.progress}%</Typography>
                     </Box>
-                    <LinearProgress 
-                      variant="determinate" 
+                    <LinearProgress
+                      variant="determinate"
                       value={p.progress}
-                      sx={{ 
-                        height: 7, 
-                        borderRadius: 10, 
-                        background: '#EBF0F5', 
-                        '& .MuiLinearProgress-bar': { background: statusColors[p.status] || '#4A6331', borderRadius: 10 } 
+                      sx={{
+                        height: 7,
+                        borderRadius: 10,
+                        background: '#EBF0F5',
+                        '& .MuiLinearProgress-bar': { background: statusColors[p.status] || '#4A6331', borderRadius: 10 }
                       }}
                     />
                   </Box>
@@ -532,24 +521,24 @@ export function ProjectsPage() {
         <DialogContent sx={{ display: 'grid', gap: 2, pt: 1, minWidth: 320 }}>
           <FormControl size="small" fullWidth>
             <InputLabel>Select Trainee</InputLabel>
-            <Select 
+            <Select
               value={assignment.traineeId}
               label="Select Trainee"
-              onChange={e => setAssignment({...assignment, traineeId: e.target.value})}
+              onChange={e => setAssignment({ ...assignment, traineeId: e.target.value })}
             >
               {trainees.map(t => (
                 <MenuItem key={t.id} value={t.id}>{t.roll_number} - {t.full_name} ({t.domain})</MenuItem>
               ))}
             </Select>
           </FormControl>
-          <TextField 
-            label="Deadline Override (Optional)" 
+          <TextField
+            label="Deadline Override (Optional)"
             type="date"
             InputLabelProps={{ shrink: true }}
             size="small"
             fullWidth
             value={assignment.deadline}
-            onChange={e => setAssignment({...assignment, deadline: e.target.value})}
+            onChange={e => setAssignment({ ...assignment, deadline: e.target.value })}
           />
         </DialogContent>
         <DialogActions>
@@ -562,55 +551,55 @@ export function ProjectsPage() {
       <Dialog open={isCreateOpen} onClose={() => setIsCreateOpen(false)}>
         <DialogTitle sx={{ fontWeight: 800 }}>Create New Project</DialogTitle>
         <DialogContent sx={{ display: 'grid', gap: 2, pt: 1, minWidth: 320 }}>
-          <TextField 
-            label="Project Code *" 
+          <TextField
+            label="Project Code *"
             placeholder="e.g. TT24-AI-005"
-            size="small" 
-            fullWidth 
+            size="small"
+            fullWidth
             value={newProject.project_code}
-            onChange={e => setNewProject({...newProject, project_code: e.target.value})}
+            onChange={e => setNewProject({ ...newProject, project_code: e.target.value })}
           />
-          <TextField 
-            label="Project Title *" 
-            size="small" 
-            fullWidth 
+          <TextField
+            label="Project Title *"
+            size="small"
+            fullWidth
             value={newProject.title}
-            onChange={e => setNewProject({...newProject, title: e.target.value})}
+            onChange={e => setNewProject({ ...newProject, title: e.target.value })}
           />
-          <TextField 
-            label="Description *" 
-            multiline 
-            rows={3} 
-            size="small" 
-            fullWidth 
+          <TextField
+            label="Description *"
+            multiline
+            rows={3}
+            size="small"
+            fullWidth
             value={newProject.description}
-            onChange={e => setNewProject({...newProject, description: e.target.value})}
+            onChange={e => setNewProject({ ...newProject, description: e.target.value })}
           />
           <FormControl size="small" fullWidth>
             <InputLabel>Domain</InputLabel>
-            <Select 
-              value={newProject.domain} 
+            <Select
+              value={newProject.domain}
               label="Domain"
-              onChange={e => setNewProject({...newProject, domain: e.target.value})}
+              onChange={e => setNewProject({ ...newProject, domain: e.target.value })}
             >
               {['AI/ML', 'Web Dev', 'Cyber Sec', 'Data Sci', 'IoT', 'Embedded'].map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
             </Select>
           </FormControl>
-          <TextField 
-            label="Recommended Team Size" 
+          <TextField
+            label="Recommended Team Size"
             type="number"
-            size="small" 
-            fullWidth 
+            size="small"
+            fullWidth
             value={newProject.team}
-            onChange={e => setNewProject({...newProject, team: parseInt(e.target.value) || 1})}
+            onChange={e => setNewProject({ ...newProject, team: parseInt(e.target.value) || 1 })}
           />
-          <TextField 
-            label="Tech Stack (comma separated)" 
+          <TextField
+            label="Tech Stack (comma separated)"
             placeholder="e.g. React, Python, Django, MongoDB"
-            size="small" 
-            fullWidth 
+            size="small"
+            fullWidth
             value={newProject.stack}
-            onChange={e => setNewProject({...newProject, stack: e.target.value})}
+            onChange={e => setNewProject({ ...newProject, stack: e.target.value })}
           />
         </DialogContent>
         <DialogActions>
@@ -619,8 +608,8 @@ export function ProjectsPage() {
         </DialogActions>
       </Dialog>
 
-      <Snackbar open={toast.open} autoHideDuration={4000} onClose={() => setToast({...toast, open: false})}>
-        <Alert severity={toast.severity} onClose={() => setToast({...toast, open: false})}>{toast.message}</Alert>
+      <Snackbar open={toast.open} autoHideDuration={4000} onClose={() => setToast({ ...toast, open: false })}>
+        <Alert severity={toast.severity} onClose={() => setToast({ ...toast, open: false })}>{toast.message}</Alert>
       </Snackbar>
     </Box>
   );
@@ -629,17 +618,17 @@ export function ProjectsPage() {
 // ── ATTENDANCE PAGE ───────────────────────────────────────────
 export function AttendancePage() {
   const navigate = useNavigate();
-  
+
   const [trainees, setTrainees] = useState([]);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
-  
+
   const [selectedDate, setSelectedDate] = useState(() => {
     return new Date().toISOString().split('T')[0];
   });
   const [sessionName, setSessionName] = useState('Daily Morning Session');
-  
+
   // Interactive changes
   const [editedAttendance, setEditedAttendance] = useState({}); // maps trainee_id -> { status, notes }
 
@@ -652,10 +641,10 @@ export function AttendancePage() {
       ]);
       const trList = traineesRes.data.results || traineesRes.data || [];
       const recList = recordsRes.data || [];
-      
+
       setTrainees(trList);
       setAttendanceRecords(recList);
-      
+
       // Seed edited attendance map
       const initialMap = {};
       trList.forEach(t => {
@@ -663,7 +652,7 @@ export function AttendancePage() {
           const rTraineeId = typeof r.trainee_id === 'object' ? r.trainee_id.id : r.trainee_id;
           return String(rTraineeId) === String(t.id);
         });
-        
+
         initialMap[t.id] = {
           status: matchingRecord ? matchingRecord.status : 'present',
           notes: matchingRecord ? (matchingRecord.notes || '') : '',
@@ -747,8 +736,8 @@ export function AttendancePage() {
   return (
     <Box>
       <Breadcrumb items={[{ label: 'Dashboard', onClick: () => navigate('/admin') }, { label: 'Attendance' }]} />
-      <PageHeader 
-        title="Attendance Management" 
+      <PageHeader
+        title="Attendance Management"
         subtitle="Mark, update and review daily trainee registers"
         actions={
           <>
@@ -761,16 +750,16 @@ export function AttendancePage() {
 
       {/* Date controls */}
       <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center', flexWrap: 'wrap' }}>
-        <TextField 
-          label="Attendance Date" 
-          type="date" 
+        <TextField
+          label="Attendance Date"
+          type="date"
           size="small"
           value={selectedDate}
           onChange={e => setSelectedDate(e.target.value)}
           InputLabelProps={{ shrink: true }}
         />
-        <TextField 
-          label="Session Name / Topic" 
+        <TextField
+          label="Session Name / Topic"
           size="small"
           value={sessionName}
           onChange={e => setSessionName(e.target.value)}
@@ -819,9 +808,9 @@ export function AttendancePage() {
                         <TableCell><Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{t.roll_number}</Typography></TableCell>
                         <TableCell><DomainChip domain={t.domain} /></TableCell>
                         <TableCell>
-                          <Select 
-                            size="small" 
-                            value={state.status} 
+                          <Select
+                            size="small"
+                            value={state.status}
                             onChange={e => handleStatusChange(t.id, e.target.value)}
                             sx={{ minWidth: 110, fontSize: '0.8rem' }}
                           >
@@ -832,8 +821,8 @@ export function AttendancePage() {
                         </TableCell>
                         <TableCell>
                           {state.status === 'leave' ? (
-                            <Select 
-                              size="small" 
+                            <Select
+                              size="small"
                               value={state.leave_type || 'Casual'}
                               onChange={e => handleLeaveTypeChange(t.id, e.target.value)}
                               sx={{ minWidth: 100, fontSize: '0.8rem' }}
@@ -845,10 +834,10 @@ export function AttendancePage() {
                           ) : '—'}
                         </TableCell>
                         <TableCell>
-                          <TextField 
-                            size="small" 
-                            placeholder="Add remark..." 
-                            value={state.notes || ''} 
+                          <TextField
+                            size="small"
+                            placeholder="Add remark..."
+                            value={state.notes || ''}
                             onChange={e => handleNotesChange(t.id, e.target.value)}
                             sx={{ width: '100%', '& input': { fontSize: '0.8rem' } }}
                           />
@@ -868,9 +857,9 @@ export function AttendancePage() {
           </TableContainer>
         )}
       </Card>
-      
-      <Snackbar open={toast.open} autoHideDuration={4000} onClose={() => setToast({...toast, open: false})}>
-        <Alert severity={toast.severity} onClose={() => setToast({...toast, open: false})}>{toast.message}</Alert>
+
+      <Snackbar open={toast.open} autoHideDuration={4000} onClose={() => setToast({ ...toast, open: false })}>
+        <Alert severity={toast.severity} onClose={() => setToast({ ...toast, open: false })}>{toast.message}</Alert>
       </Snackbar>
     </Box>
   );
@@ -956,7 +945,7 @@ export function AnnouncementsPage() {
     <Box>
       <Breadcrumb items={[{ label: 'Dashboard', onClick: () => navigate('/admin') }, { label: 'Announcements' }]} />
       <Typography variant="h5" sx={{ fontWeight: 800, mb: 3 }}>Announcement Center</Typography>
-      
+
       <Grid container spacing={2.5}>
         <Grid item xs={12} md={7}>
           <Card>
@@ -965,34 +954,34 @@ export function AnnouncementsPage() {
               <Box sx={{ display: 'grid', gap: 2 }}>
                 <Box>
                   <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mb: 0.75 }}>Announcement Title *</Typography>
-                  <TextField 
+                  <TextField
                     size="small"
                     fullWidth
                     placeholder="e.g. Revised Session Schedule for AI/ML"
                     value={form.title}
-                    onChange={e => setForm({...form, title: e.target.value})}
+                    onChange={e => setForm({ ...form, title: e.target.value })}
                   />
                 </Box>
                 <Box>
                   <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mb: 0.75 }}>Full Message *</Typography>
-                  <TextField 
+                  <TextField
                     size="small"
                     fullWidth
                     multiline
                     rows={5}
                     placeholder="Write the full announcement here..."
                     value={form.body}
-                    onChange={e => setForm({...form, body: e.target.value})}
+                    onChange={e => setForm({ ...form, body: e.target.value })}
                   />
                 </Box>
                 <Grid container spacing={1.5}>
                   <Grid item xs={12} sm={6}>
                     <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mb: 0.75 }}>Target Audience</Typography>
-                    <Select 
-                      size="small" 
-                      fullWidth 
+                    <Select
+                      size="small"
+                      fullWidth
                       value={form.target_audience}
-                      onChange={e => setForm({...form, target_audience: e.target.value})}
+                      onChange={e => setForm({ ...form, target_audience: e.target.value })}
                     >
                       {['All Batches', 'AI/ML Domain', 'Cyber Security', 'Web Development', 'Data Science', 'IoT', 'Embedded Systems'].map(o => (
                         <MenuItem key={o} value={o}>{o}</MenuItem>
@@ -1001,11 +990,11 @@ export function AnnouncementsPage() {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mb: 0.75 }}>Priority Level</Typography>
-                    <Select 
-                      size="small" 
-                      fullWidth 
+                    <Select
+                      size="small"
+                      fullWidth
                       value={form.priority}
-                      onChange={e => setForm({...form, priority: e.target.value})}
+                      onChange={e => setForm({ ...form, priority: e.target.value })}
                     >
                       {['normal', 'urgent', 'notice', 'informational'].map(o => (
                         <MenuItem key={o} value={o}>{o.toUpperCase()}</MenuItem>
@@ -1025,13 +1014,13 @@ export function AnnouncementsPage() {
             </CardContent>
           </Card>
         </Grid>
-        
+
         <Grid item xs={12} md={5}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
             <Typography variant="h6">Announcements List</Typography>
             <Chip label={`${announcements.length} total`} size="small" sx={{ background: '#EEF2E8', color: '#4A6331', fontWeight: 700 }} />
           </Box>
-          
+
           {loading && announcements.length === 0 ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress sx={{ color: '#4A6331' }} /></Box>
           ) : (
@@ -1039,14 +1028,14 @@ export function AnnouncementsPage() {
               {announcements.length > 0 ? (
                 announcements.map(a => (
                   <Box key={a.id} sx={{ position: 'relative' }}>
-                    <AnnouncementCard 
-                      title={`${a.is_draft ? '[DRAFT] ' : ''}${a.title}`} 
-                      meta={`${new Date(a.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} · ${a.target_audience} · ${a.priority.toUpperCase()}`} 
-                      priority={a.priority} 
+                    <AnnouncementCard
+                      title={`${a.is_draft ? '[DRAFT] ' : ''}${a.title}`}
+                      meta={`${new Date(a.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} · ${a.target_audience} · ${a.priority.toUpperCase()}`}
+                      priority={a.priority}
                     />
-                    <Button 
-                      variant="text" 
-                      color="error" 
+                    <Button
+                      variant="text"
+                      color="error"
                       size="small"
                       sx={{ position: 'absolute', right: 10, bottom: 8, fontSize: '0.68rem', minWidth: 0, p: 0.5 }}
                       onClick={() => handleDelete(a.id)}
@@ -1062,9 +1051,9 @@ export function AnnouncementsPage() {
           )}
         </Grid>
       </Grid>
-      
-      <Snackbar open={toast.open} autoHideDuration={4000} onClose={() => setToast({...toast, open: false})}>
-        <Alert severity={toast.severity} onClose={() => setToast({...toast, open: false})}>{toast.message}</Alert>
+
+      <Snackbar open={toast.open} autoHideDuration={4000} onClose={() => setToast({ ...toast, open: false })}>
+        <Alert severity={toast.severity} onClose={() => setToast({ ...toast, open: false })}>{toast.message}</Alert>
       </Snackbar>
     </Box>
   );

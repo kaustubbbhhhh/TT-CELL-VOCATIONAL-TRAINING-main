@@ -23,7 +23,7 @@ class AnnouncementListCreateView(APIView):
             trainee_domain = None
             if request.user.trainee_id:
                 try:
-                    trainee = Trainee.objects.get(id=request.user.trainee_id)
+                    trainee = Trainee.objects.get(pk=request.user.trainee_id)
                     trainee_domain = trainee.domain
                 except:
                     pass
