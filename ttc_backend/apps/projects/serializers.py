@@ -22,6 +22,8 @@ class ProjectSerializer(serializers.Serializer):
 class ProjectAssignSerializer(serializers.Serializer):
     student_ids = serializers.ListField(child=serializers.CharField(), required=False)
     trainee_ids = serializers.ListField(child=serializers.CharField(), required=False)
+    student_id = serializers.CharField(required=False)
+    trainee_id = serializers.CharField(required=False)
     deadline_override = serializers.DateTimeField(required=False, allow_null=True)
 
     def validate(self, data):
@@ -29,6 +31,11 @@ class ProjectAssignSerializer(serializers.Serializer):
         trainee_ids = data.get('trainee_ids', [])
         student_ids = data.get('student_ids', [])
         
+        if 'trainee_id' in data:
+            trainee_ids.append(data['trainee_id'])
+        if 'student_id' in data:
+            student_ids.append(data['student_id'])
+            
         combined_ids = list(set(trainee_ids + student_ids))
         if not combined_ids:
             raise serializers.ValidationError("At least one trainee/student ID must be specified.")

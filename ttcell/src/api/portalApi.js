@@ -103,7 +103,7 @@ export const projectsApi = {
   },
 
   assign: async (id, traineeId, deadlineOverride = null) => {
-    const data = { trainee_id: traineeId };
+    const data = { trainee_ids: [traineeId] };
     if (deadlineOverride) {
       data.deadline_override = deadlineOverride;
     }
