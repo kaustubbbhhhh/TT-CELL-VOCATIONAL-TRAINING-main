@@ -28,6 +28,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
     'django.middleware.common.CommonMiddleware',
     'middleware.jwt_middleware.JWTMiddleware',
 ]
@@ -59,10 +60,21 @@ REST_FRAMEWORK = {
 
 # CORS configuration
 CORS_ALLOW_CREDENTIALS = True
+
+# Secure fallback: Localhost is only default in DEBUG mode. In production, fail closed if not set.
+_default_cors = 'http://localhost:3000' if DEBUG else ''
 CORS_ALLOWED_ORIGINS = [
-    origin.strip() for origin in os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',') if origin.strip()
+    origin.strip() for origin in os.environ.get('CORS_ALLOWED_ORIGINS', _default_cors).split(',') if origin.strip()
 ]
 
+# Explicitly restrict HTTP methods (e.g. PATCH is disabled)
+CORS_ALLOW_METHODS = (
+    'GET',
+    'POST',
+    'PUT',
+    'DELETE',
+    'OPTIONS',
+)
 # Static files
 STATIC_URL = 'static/'
 

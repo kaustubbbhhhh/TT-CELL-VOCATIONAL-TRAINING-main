@@ -113,10 +113,29 @@ class AttendanceService:
         if total == 0:
             return 100.0  # Default to 100 if no sessions exist
 
-        # Calculation policy: present days / total days * 100
         present = records(status='present').count()
-        # You could also treat approved leave as excused:
-        # present_and_leave = records(status__in=['present', 'leave']).count()
-        # Let's count (present / total) * 100
-        
         return round((present / total) * 100, 2)
+
+    @staticmethod
+    def get_bulk_attendance_percentages() -> dict:
+        """Calculate attendance percentages for ALL trainees in a single MongoDB aggregation query. Returns dict mapping trainee_id to float."""
+        pipeline = [
+            {
+                "$group": {
+                    "_id": "$trainee_id",
+                    "total_records": {"$sum": 1},
+                    "present_records": {
+                        "$sum": {"$cond": [{"$eq": ["$status", "present"]}, 1, 0]}
+                    }
+                }
+            }
+        ]
+        results = AttendanceRecord.objects.aggregate(pipeline)
+        attendance_dict = {}
+        for r in results:
+            trainee_id = str(r['_id'])
+            total = r['total_records']
+            present = r['present_records']
+            pct = round((present / total) * 100, 2) if total > 0 else 100.0
+            attendance_dict[trainee_id] = pct
+        return attendance_dict

@@ -15,25 +15,25 @@ class DashboardStatsView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
+        # 0. Fetch data exactly once
+        all_trainees = list(Trainee.objects(is_active=True))
+        all_attendance = list(AttendanceRecord.objects())
+        all_projects = list(Project.objects(is_active=True, is_archived=False))
+
         # 1. Total active trainees
-        total_trainees = Trainee.objects(is_active=True).count()
+        total_trainees = len(all_trainees)
 
         # 2. Average attendance
-        total_attendance_records = AttendanceRecord.objects.count()
-        present_attendance_records = AttendanceRecord.objects(status='present').count()
+        total_attendance_records = len(all_attendance)
+        present_attendance_records = sum(1 for a in all_attendance if a.status == 'present')
         avg_attendance = round((present_attendance_records / total_attendance_records) * 100, 1) if total_attendance_records > 0 else 85.0
 
         # 3. Active projects
-        active_projects = Project.objects(is_active=True, is_archived=False, status__ne='completed').count()
+        active_projects = sum(1 for p in all_projects if p.status != 'completed')
 
         # 4. At-risk trainees
-        active_trainees = Trainee.objects(is_active=True)
-        at_risk_count = 0
-        for t in active_trainees:
-            pct = AttendanceService.get_trainee_attendance_percentage(str(t.id))
-            records_count = AttendanceRecord.objects(trainee_id=t.id).count()
-            if records_count > 0 and pct < 75.0:
-                at_risk_count += 1
+        attendance_dict = AttendanceService.get_bulk_attendance_percentages()
+        at_risk_count = sum(1 for t in all_trainees if str(t.id) in attendance_dict and attendance_dict[str(t.id)] < 75.0)
 
         # 5. Last 6 weeks attendance trends (percentages)
         today = datetime.datetime.utcnow().date()
@@ -42,8 +42,12 @@ class DashboardStatsView(APIView):
         for i in range(5, -1, -1):
             start_date = today_start - datetime.timedelta(days=(i+1)*7)
             end_date = today_start - datetime.timedelta(days=i*7)
-            total_w = AttendanceRecord.objects(date__gte=start_date, date__lt=end_date).count()
-            present_w = AttendanceRecord.objects(date__gte=start_date, date__lt=end_date, status='present').count()
+            
+            # Using memory instead of DB
+            week_records = [a for a in all_attendance if start_date <= a.date < end_date]
+            total_w = len(week_records)
+            present_w = sum(1 for a in week_records if a.status == 'present')
+            
             pct = round((present_w / total_w) * 100, 1) if total_w > 0 else 85.0
             attendance_weeks.append(pct)
 
@@ -54,7 +58,7 @@ class DashboardStatsView(APIView):
         }
         domain_data = []
         for domain in DOMAINS:
-            count = Trainee.objects(is_active=True, domain=domain).count()
+            count = sum(1 for t in all_trainees if t.domain == domain)
             domain_data.append({
                 "name": domain,
                 "count": count,
@@ -218,29 +222,35 @@ class AnalyticsView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
+        # 0. Fetch all data exactly once to avoid multiple DB calls
+        all_projects = list(Project.objects(is_active=True))
+        all_trainees_ever = list(Trainee.objects())
+
         # 1. completion_rate
-        total_active_projects = Project.objects(is_active=True, is_archived=False).count()
-        completed_or_submitted = Project.objects(is_active=True, is_archived=False, status__in=['completed', 'submitted']).count()
+        active_unarchived = [p for p in all_projects if not p.is_archived]
+        total_active_projects = len(active_unarchived)
+        completed_or_submitted = sum(1 for p in active_unarchived if p.status in ['completed', 'submitted'])
         completion_rate = round((completed_or_submitted / total_active_projects) * 100, 1) if total_active_projects > 0 else 0.0
 
         # 2. avg_project_score
-        scored_projects = Project.objects(is_active=True, score__ne=None)
-        all_scores = [p.score for p in scored_projects if p.score is not None]
+        scored_projects = [p for p in all_projects if p.score is not None]
+        all_scores = [p.score for p in scored_projects]
         avg_project_score = round(sum(all_scores) / len(all_scores), 1) if all_scores else 0.0
 
         # 3. total_trainees
-        total_trainees = Trainee.objects(is_active=True).count()
+        active_trainees = [t for t in all_trainees_ever if t.is_active]
+        total_trainees = len(active_trainees)
 
         # 4. dropout_rate
-        total_trainees_ever = Trainee.objects.count()
-        inactive_trainees = Trainee.objects(is_active=False).count()
-        dropout_rate = round((inactive_trainees / total_trainees_ever) * 100, 1) if total_trainees_ever > 0 else 0.0
+        total_trainees_ever_count = len(all_trainees_ever)
+        inactive_trainees = total_trainees_ever_count - total_trainees
+        dropout_rate = round((inactive_trainees / total_trainees_ever_count) * 100, 1) if total_trainees_ever_count > 0 else 0.0
 
         # 5. domain_scores
         domain_scores = []
         for d in DOMAINS:
-            domain_projects = Project.objects(domain=d, is_active=True, score__ne=None)
-            scores = [p.score for p in domain_projects if p.score is not None]
+            domain_projects = [p for p in scored_projects if p.domain == d]
+            scores = [p.score for p in domain_projects]
             avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
             domain_scores.append({"name": d, "score": avg_score})
 
@@ -251,8 +261,9 @@ class AnalyticsView(APIView):
             "75-85%": {"count": 0, "color": "#B8960C"},
             "Below 75%": {"count": 0, "color": "#C0392B"}
         }
-        for t in Trainee.objects(is_active=True):
-            att_pct = AttendanceService.get_trainee_attendance_percentage(t.id)
+        attendance_dict = AttendanceService.get_bulk_attendance_percentages()
+        for t in active_trainees:
+            att_pct = attendance_dict.get(str(t.id), 100.0)
             if att_pct >= 95.0:
                 buckets["95-100%"]["count"] += 1
             elif att_pct >= 85.0:
@@ -271,41 +282,45 @@ class AnalyticsView(APIView):
 
         # 7. project_status_breakdown
         status_colors = {
-            'submitted': '#4A6331',
-            'in_progress': '#B8960C',
             'planning': '#3D5A80',
-            'completed': '#1E3A8A'
+            'in_progress': '#B8960C',
+            'submitted': '#4A6331',
+            'completed': '#1E2C3A'
         }
-        status_labels = {
-            'submitted': 'Submitted',
-            'in_progress': 'In Progress',
-            'planning': 'Planning',
-            'completed': 'Completed'
-        }
-        status_counts = {}
+        project_status_breakdown = []
         for s in ['planning', 'in_progress', 'submitted', 'completed']:
-            status_counts[s] = Project.objects(is_active=True, status=s).count()
-
-        project_status_breakdown = [
-            {"label": status_labels[s], "count": status_counts[s], "color": status_colors[s]}
-            for s in ['submitted', 'in_progress', 'planning', 'completed']
-        ]
+            count = sum(1 for p in all_projects if p.status == s)
+            project_status_breakdown.append({
+                "name": s.replace('_', ' ').title(),
+                "value": count,
+                "color": status_colors[s]
+            })
 
         # 8. top_performers
+        from collections import defaultdict
+        active_projects_map = {str(p.id): p for p in Project.objects(is_active=True)}
+        assignments = ProjectAssignment.objects().no_dereference()
+        trainee_assignments = defaultdict(list)
+        for a in assignments:
+            tid = str(a._data['trainee_id']) if hasattr(a, '_data') else str(a.trainee_id.id)
+            pid = str(a._data['project_id']) if hasattr(a, '_data') else str(a.project_id.id)
+            if pid in active_projects_map:
+                trainee_assignments[tid].append(active_projects_map[pid])
+
         trainee_composites = []
-        for t in Trainee.objects(is_active=True):
-            att_pct = AttendanceService.get_trainee_attendance_percentage(t.id)
-            assignments = ProjectAssignment.objects(trainee_id=t.id)
-            total_assigned = assignments.count()
+        for t in active_trainees:
+            tid = str(t.id)
+            att_pct = attendance_dict.get(tid, 100.0)
+            t_projs = trainee_assignments.get(tid, [])
+            total_assigned = len(t_projs)
             completed_count = 0
             scores = []
-            for a in assignments:
-                proj = a.project_id
-                if proj.is_active:
-                    if proj.status == 'completed':
-                        completed_count += 1
-                    if proj.score is not None:
-                        scores.append(proj.score)
+            for proj in t_projs:
+                if proj.status == 'completed':
+                    completed_count += 1
+                if proj.score is not None:
+                    scores.append(proj.score)
+            
             avg_score = sum(scores) / len(scores) if scores else 85.0
             composite = (att_pct * 0.4) + (avg_score * 0.6)
             trainee_composites.append({
@@ -461,8 +476,9 @@ class ReportsView(APIView):
 
         if report_type == 'Attendance Report':
             writer.writerow(['Roll Number', 'Full Name', 'Domain', 'Batch', 'Attendance Percentage'])
+            attendance_dict = AttendanceService.get_bulk_attendance_percentages()
             for t in Trainee.objects(is_active=True):
-                att_pct = AttendanceService.get_trainee_attendance_percentage(t.id)
+                att_pct = attendance_dict.get(str(t.id), 100.0)
                 writer.writerow([t.roll_number, t.full_name, t.domain, t.batch, f"{att_pct}%"])
 
         elif report_type == 'Project Progress Report':
@@ -473,35 +489,61 @@ class ReportsView(APIView):
 
         elif report_type == 'Batch Performance Report':
             writer.writerow(['Roll Number', 'Full Name', 'Domain', 'Batch', 'Attendance Percentage', 'Completed/Assigned Projects', 'Composite Score'])
+            attendance_dict = AttendanceService.get_bulk_attendance_percentages()
+            
+            from collections import defaultdict
+            active_projects_map = {str(p.id): p for p in Project.objects(is_active=True)}
+            assignments = ProjectAssignment.objects().no_dereference()
+            trainee_assignments = defaultdict(list)
+            for a in assignments:
+                tid = str(a._data['trainee_id']) if hasattr(a, '_data') else str(a.trainee_id.id)
+                pid = str(a._data['project_id']) if hasattr(a, '_data') else str(a.project_id.id)
+                if pid in active_projects_map:
+                    trainee_assignments[tid].append(active_projects_map[pid])
+
             for t in Trainee.objects(is_active=True):
-                att_pct = AttendanceService.get_trainee_attendance_percentage(t.id)
-                assignments = ProjectAssignment.objects(trainee_id=t.id)
-                total_assigned = assignments.count()
+                att_pct = attendance_dict.get(str(t.id), 100.0)
+                t_projs = trainee_assignments.get(str(t.id), [])
+                total_assigned = len(t_projs)
                 completed_count = 0
                 scores = []
-                for a in assignments:
-                    proj = a.project_id
-                    if proj.is_active:
-                        if proj.status == 'completed':
-                            completed_count += 1
-                        if proj.score is not None:
-                            scores.append(proj.score)
+                for proj in t_projs:
+                    if proj.status == 'completed':
+                        completed_count += 1
+                    if proj.score is not None:
+                        scores.append(proj.score)
                 avg_score = sum(scores) / len(scores) if scores else 85.0
                 composite = (att_pct * 0.4) + (avg_score * 0.6)
                 writer.writerow([t.roll_number, t.full_name, t.domain, t.batch, f"{round(att_pct, 1)}%", f"{completed_count}/{total_assigned}", round(composite, 1)])
 
         elif report_type == 'At-Risk Trainee Report':
             writer.writerow(['Roll Number', 'Full Name', 'Domain', 'Batch', 'Attendance Percentage', 'Reason'])
+            attendance_dict = AttendanceService.get_bulk_attendance_percentages()
+            
+            from collections import defaultdict
+            active_projects_map = {str(p.id): p for p in Project.objects(is_active=True)}
+            assignments = ProjectAssignment.objects().no_dereference()
+            trainee_assignments = defaultdict(list)
+            for a in assignments:
+                tid = str(a._data['trainee_id']) if hasattr(a, '_data') else str(a.trainee_id.id)
+                pid = str(a._data['project_id']) if hasattr(a, '_data') else str(a.project_id.id)
+                if pid in active_projects_map:
+                    # also store the deadline_override so we can check it
+                    deadline = a._data.get('deadline_override') if hasattr(a, '_data') else a.deadline_override
+                    trainee_assignments[tid].append({'proj': active_projects_map[pid], 'deadline': deadline})
+
             for t in Trainee.objects(is_active=True):
-                att_pct = AttendanceService.get_trainee_attendance_percentage(t.id)
+                att_pct = attendance_dict.get(str(t.id), 100.0)
                 reasons = []
                 if att_pct < 75.0:
                     reasons.append(f"Low Attendance ({round(att_pct, 1)}%)")
-                assignments = ProjectAssignment.objects(trainee_id=t.id)
-                for a in assignments:
-                    proj = a.project_id
-                    if proj.is_active and proj.status != 'completed':
-                        if a.deadline_override and a.deadline_override < datetime.datetime.utcnow():
+                
+                t_projs = trainee_assignments.get(str(t.id), [])
+                for item in t_projs:
+                    proj = item['proj']
+                    deadline = item['deadline']
+                    if proj.status != 'completed':
+                        if deadline and deadline < datetime.datetime.utcnow():
                             reasons.append(f"Overdue Project: {proj.title}")
                 if reasons:
                     writer.writerow([t.roll_number, t.full_name, t.domain, t.batch, f"{round(att_pct, 1)}%", " | ".join(reasons)])

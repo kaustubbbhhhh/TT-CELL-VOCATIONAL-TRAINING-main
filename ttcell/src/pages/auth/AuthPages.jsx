@@ -1,50 +1,64 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Box, Typography, Button, Card, CardContent, Alert } from '@mui/material';
+import { Box, Typography, Button, Card, CardContent, Alert, IconButton } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import { useAuth } from '../../context/AuthContext';
 
-const FormField = ({ label, type = 'text', placeholder, value, onChange }) => (
-  <Box sx={{ mb: 2 }}>
-    <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mb: 0.75, color: '#1A2332' }}>{label}</Typography>
-    <Box
-      component="input"
-      type={type}
-      placeholder={placeholder}
-      value={value}
-      onChange={onChange}
-      sx={{
-        width: '100%', p: '9px 12px', border: '1px solid #B8C5D3',
-        borderRadius: '8px', fontSize: '0.875rem', fontFamily: 'inherit',
-        outline: 'none', boxSizing: 'border-box', color: '#1A2332',
-        '&:focus': { borderColor: '#4A6331', boxShadow: '0 0 0 3px rgba(74,99,49,0.12)' },
-      }}
-    />
-  </Box>
-);
+const FormField = ({ label, type = 'text', placeholder, value, onChange }) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === 'password';
+  const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
+
+  return (
+    <Box sx={{ mb: 2 }}>
+      <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mb: 0.75, color: '#1A2332' }}>{label}</Typography>
+      <Box sx={{ position: 'relative' }}>
+        <Box
+          component="input"
+          type={inputType}
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+          sx={{
+            width: '100%', p: '9px 12px', pr: isPassword ? '40px' : '12px', border: '1px solid #B8C5D3',
+            borderRadius: '8px', fontSize: '0.875rem', fontFamily: 'inherit',
+            outline: 'none', boxSizing: 'border-box', color: '#1A2332',
+            '&:focus': { borderColor: '#4A6331', boxShadow: '0 0 0 3px rgba(74,99,49,0.12)' },
+          }}
+        />
+        {isPassword && (
+          <IconButton
+            onClick={() => setShowPassword(!showPassword)}
+            sx={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', padding: '6px' }}
+            tabIndex={-1}
+          >
+            {showPassword ? <VisibilityOffOutlinedIcon fontSize="small" sx={{ color: '#7A8B99' }} /> : <VisibilityOutlinedIcon fontSize="small" sx={{ color: '#7A8B99' }} />}
+          </IconButton>
+        )}
+      </Box>
+    </Box>
+  );
+};
 
 export function LoginPage() {
   const navigate = useNavigate();
   const { login, loading } = useAuth();
   const [role, setRole] = useState('admin');
-  const [username, setUsername] = useState('admin@ttcell');
-  const [password, setPassword] = useState('password');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const roleLabels = {
     admin:   'Signing in as: Administrator',
-    trainee: 'Signing in as: Trainee — Rahul Verma (TT24-001)',
+    trainee: 'Signing in as: Trainee',
   };
 
   const handleRoleChange = (selectedRole) => {
     setRole(selectedRole);
-    if (selectedRole === 'admin') {
-      setUsername('admin@ttcell');
-      setPassword('password');
-    } else {
-      setUsername('trainee@ttcell');
-      setPassword('ChangeMeOnFirstLogin!');
-    }
+    setUsername('');
+    setPassword('');
   };
 
   const handleLogin = async () => {
@@ -75,7 +89,7 @@ export function LoginPage() {
               </svg>
             </Box>
             <Typography variant="h5" sx={{ fontWeight: 800 }}>TT Cell Portal</Typography>
-            <Typography variant="body2" sx={{ color: '#7A8B99', mt: 0.5 }}>Army Base Workshop — Secure Access</Typography>
+            <Typography variant="body2" sx={{ color: '#7A8B99', mt: 0.5 }}>509 Army Base Workshop — Secure Access</Typography>
           </Box>
 
           {/* Role Tabs */}
@@ -102,21 +116,23 @@ export function LoginPage() {
 
           {error && <Alert severity="error" sx={{ mb: 2, fontSize: '0.8rem' }}>{error}</Alert>}
 
-          <FormField label="Email / Service ID" placeholder="e.g. admin@ttcell" value={username} onChange={e => setUsername(e.target.value)} />
-          <FormField label="Password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
+          <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+            <FormField label="Email / Service ID" placeholder="e.g. admin@ttcell" value={username} onChange={e => setUsername(e.target.value)} />
+            <FormField label="Password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
-            <Typography sx={{ fontSize: '0.8rem', color: '#445566', display: 'flex', alignItems: 'center', gap: 0.75 }}>
-              <input type="checkbox" defaultChecked /> Remember on this device
-            </Typography>
-            <Typography onClick={() => navigate('/forgot-password')} sx={{ fontSize: '0.8rem', color: '#4A6331', cursor: 'pointer', fontWeight: 700, '&:hover': { textDecoration: 'underline' } }}>
-              Forgot password?
-            </Typography>
-          </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
+              <Typography sx={{ fontSize: '0.8rem', color: '#445566', display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <input type="checkbox" defaultChecked /> Remember on this device
+              </Typography>
+              <Typography onClick={() => navigate('/forgot-password')} sx={{ fontSize: '0.8rem', color: '#4A6331', cursor: 'pointer', fontWeight: 700, '&:hover': { textDecoration: 'underline' } }}>
+                Forgot password?
+              </Typography>
+            </Box>
 
-          <Button fullWidth variant="contained" size="large" onClick={handleLogin} disabled={loading} startIcon={<LockOutlinedIcon />} sx={{ mb: 2 }}>
-            {loading ? 'Signing In...' : 'Sign In Securely'}
-          </Button>
+            <Button type="submit" fullWidth variant="contained" size="large" disabled={loading} startIcon={<LockOutlinedIcon />} sx={{ mb: 2 }}>
+              {loading ? 'Signing In...' : 'Sign In Securely'}
+            </Button>
+          </form>
 
           <Box sx={{ background: '#EBF0F5', borderRadius: '8px', p: 1.5, textAlign: 'center' }}>
             <Typography sx={{ fontSize: '0.75rem', color: '#7A8B99', lineHeight: 1.6 }}>
