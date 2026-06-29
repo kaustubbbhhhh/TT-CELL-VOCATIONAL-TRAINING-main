@@ -86,7 +86,7 @@ export function LoginPage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', background: '#F4F2EC', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', p: 2 }}>
+    <Box sx={{ minHeight: 'calc(100vh - 72px)', background: '#F4F2EC', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', p: 2 }}>
       <LinePattern />
       
       <Box sx={{ width: '100%', maxWidth: 440, position: 'relative', zIndex: 1 }}>
@@ -181,7 +181,7 @@ export function ForgotPasswordPage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', background: '#F4F2EC', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+    <Box sx={{ minHeight: 'calc(100vh - 72px)', background: '#F4F2EC', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
       <LinePattern />
       <Box sx={{ width: '100%', maxWidth: 440, position: 'relative', zIndex: 1 }}>
         <Card sx={{ background: '#FAF8F3', borderRadius: '8px', border: '1px solid #D6D0C4', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
@@ -236,7 +236,7 @@ export function ResetPasswordPage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', background: '#F4F2EC', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+    <Box sx={{ minHeight: 'calc(100vh - 72px)', background: '#F4F2EC', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
       <LinePattern />
       <Box sx={{ width: '100%', maxWidth: 440, position: 'relative', zIndex: 1 }}>
         <Card sx={{ background: '#FAF8F3', borderRadius: '8px', border: '1px solid #D6D0C4', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>

@@ -66,10 +66,10 @@ export default function HomePage() {
       {/* ── HERO ── */}
       <Box sx={{
         position: 'relative',
-        minHeight: '100vh',
+        minHeight: 'calc(100vh - 72px)',
         display: 'flex',
         alignItems: 'center',
-        pt: { xs: 14, md: 16 },
+        pt: { xs: 5, md: 7 },
         pb: { xs: 6, md: 8 },
         px: { xs: 3, md: 7 },
         boxSizing: 'border-box'

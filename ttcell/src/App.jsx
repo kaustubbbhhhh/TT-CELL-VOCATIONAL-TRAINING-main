@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import { ThemeProvider, CssBaseline, Box } from '@mui/material';
 import '@fontsource/source-sans-3/400.css';
 import '@fontsource/source-sans-3/600.css';
 import '@fontsource/source-sans-3/700.css';
@@ -39,7 +39,10 @@ function PublicLayout({ children }) {
   return (
     <>
       <PublicNav />
-      {children}
+      {/* Spacer to push content below the fixed PublicNav (72px height) */}
+      <Box sx={{ pt: '72px' }}>
+        {children}
+      </Box>
     </>
   );
 }
