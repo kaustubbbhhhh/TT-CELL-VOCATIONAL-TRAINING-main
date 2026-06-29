@@ -1,6 +1,5 @@
 from rest_framework.views import APIView
 from rest_framework import status
-from rest_framework.response import Response
 from core.responses import success_response, error_response
 from core.permissions import IsAdminUser
 from core.pagination import StandardPagination

@@ -4,7 +4,7 @@ from django.conf import settings
 from mongoengine import connect, disconnect
 from apps.authentication.models import User, RefreshToken, AuditLog, PortalSettings
 from apps.authentication.services import AuthService, hash_password
-from apps.trainees.models import Trainee
+from apps.trainees.models import Trainee, Batch
 from apps.projects.models import Project, ProjectAssignment
 from apps.attendance.models import AttendanceRecord
 from apps.announcements.models import Announcement
@@ -35,6 +35,7 @@ def clean_collections():
     AttendanceRecord.drop_collection()
     Announcement.drop_collection()
     PortalSettings.drop_collection()
+    Batch.drop_collection()
 
 
 @pytest.fixture
@@ -49,13 +50,25 @@ def admin_user():
     return user
 
 @pytest.fixture
-def trainee_doc():
+def batch_doc():
+    batch = Batch(
+        batch_id="B_2024",
+        batch_year=2024,
+        batch_status="active"
+    )
+    batch.save()
+    return batch
+
+@pytest.fixture
+def trainee_doc(batch_doc):
     trainee = Trainee(
         roll_number="TT24-001",
-        full_name="Rahul Verma",
+        first_name="Rahul",
+        last_name="Verma",
         email="rahul.v@ttcell",
         domain="AI/ML",
-        batch="Batch 2024-B"
+        batch_id=batch_doc,
+        section="A"
     )
     trainee.save()
     return trainee

@@ -1,13 +1,12 @@
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from rest_framework.response import Response
 from core.responses import success_response, error_response
 from core.permissions import IsAdminUser, IsAdminOrOwnTrainee
 from core.pagination import StandardPagination
 from apps.trainees.models import Trainee
-from apps.trainees.serializers import TraineeSerializer, BulkImportResponseSerializer
-from apps.trainees.services import TraineeService
+from apps.trainees.serializers import TraineeSerializer, BulkImportResponseSerializer, BatchSerializer
+from apps.trainees.services import TraineeService, BatchService
 from core.exceptions import ValidationError
 
 class TraineeListCreateView(APIView):
@@ -20,7 +19,8 @@ class TraineeListCreateView(APIView):
         # Query params
         q = request.query_params.get('q', '').strip()
         domain = request.query_params.get('domain', '').strip()
-        batch = request.query_params.get('batch', '').strip()
+        batch_id = request.query_params.get('batch_id', '').strip()
+        section = request.query_params.get('section', '').strip()
         is_active_str = request.query_params.get('is_active', 'true').lower()
         ordering = request.query_params.get('ordering', '-created_at').strip()
 
@@ -33,8 +33,23 @@ class TraineeListCreateView(APIView):
 
         if domain:
             query_filters['domain'] = domain
-        if batch:
-            query_filters['batch'] = batch
+        if batch_id == 'all':
+            pass
+        elif batch_id:
+            query_filters['batch_id'] = batch_id
+        else:
+            from apps.authentication.models import PortalSettings
+            settings = PortalSettings.objects.first()
+            if settings and settings.batch_identifier:
+                query_filters['batch_id'] = settings.batch_identifier
+        if section:
+            query_filters['section'] = section
+
+        unassigned_str = request.query_params.get('unassigned', 'false').lower()
+        if unassigned_str == 'true':
+            from apps.projects.models import ProjectAssignment
+            assigned_trainee_ids = ProjectAssignment.objects().distinct('trainee_id')
+            query_filters['id__nin'] = assigned_trainee_ids
 
         queryset = Trainee.objects(**query_filters)
 
@@ -154,3 +169,40 @@ class TraineeBulkImportView(APIView):
 
         response_data = BulkImportResponseSerializer(result).data
         return success_response(data=response_data, message="Bulk import completed.")
+
+class BatchListCreateView(APIView):
+    """View to list and create batches."""
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        status_filter = request.query_params.get('status', '').strip()
+        batches = BatchService.get_batches(status=status_filter if status_filter else None)
+        return success_response(data=BatchSerializer(batches, many=True).data)
+
+    def post(self, request):
+        serializer = BatchSerializer(data=request.data)
+        if not serializer.is_valid():
+            raise ValidationError("Invalid payload", details=serializer.errors)
+        
+        batch = BatchService.create_batch(request.user.id, serializer.validated_data)
+        return success_response(data=BatchSerializer(batch).data, message="Batch created successfully.", status_code=status.HTTP_201_CREATED)
+
+class BatchDetailView(APIView):
+    """View to retrieve, update, and soft delete a single batch."""
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, batch_id):
+        from apps.trainees.models import Batch
+        batch = Batch.objects(batch_id=batch_id, is_active=True).first()
+        if not batch:
+            from core.exceptions import NotFoundError
+            raise NotFoundError("Batch not found.")
+        return success_response(data=BatchSerializer(batch).data)
+
+    def patch(self, request, batch_id):
+        batch = BatchService.update_batch(request.user.id, batch_id, request.data)
+        return success_response(data=BatchSerializer(batch).data, message="Batch updated successfully.")
+
+    def delete(self, request, batch_id):
+        BatchService.delete_batch(request.user.id, batch_id)
+        return success_response(message="Batch deleted successfully.")

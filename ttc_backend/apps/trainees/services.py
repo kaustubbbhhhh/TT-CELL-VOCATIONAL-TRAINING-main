@@ -1,6 +1,6 @@
 import csv
 import io
-from apps.trainees.models import Trainee, DOMAINS
+from apps.trainees.models import Trainee, Batch, DOMAINS
 from apps.authentication.models import User, AuditLog, RefreshToken
 from apps.authentication.services import AuthService
 from core.exceptions import ValidationError, ConflictError, NotFoundError
@@ -9,10 +9,9 @@ class TraineeService:
     """Service class handling Trainee operations and user account provisioning."""
 
     @staticmethod
-    def _build_default_password(full_name: str, roll_number: str) -> str:
-        """Build the initial trainee password from the trainee's name and roll number."""
-        # Remove spaces and lowercase letters for predictability
-        name_part = ''.join(full_name.split()).lower() if full_name else ''
+    def _build_default_password(first_name: str, roll_number: str) -> str:
+        """Build the initial trainee password from the trainee's first name and roll number."""
+        name_part = ((first_name or '').strip().split()[0] if first_name and first_name.strip() else '').lower()
         roll_part = ''.join(roll_number.split()).lower() if roll_number else ''
         return f"{name_part}{roll_part}"
 
@@ -21,48 +20,68 @@ class TraineeService:
         """Create a new Trainee and auto-provision their login account."""
         roll_number = data.get('roll_number')
         email = data.get('email')
-        full_name = data.get('full_name')
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
         domain = data.get('domain')
-        batch = data.get('batch')
+        batch_id = data.get('batch_id')
+        section = data.get('section')
         phone = data.get('phone')
+        
+        # New fields
+        college_name = data.get('college_name')
+        father_name = data.get('father_name')
+        father_phone = data.get('father_phone')
+        mother_name = data.get('mother_name')
+        mother_phone = data.get('mother_phone')
+        year = data.get('year')
+        branch = data.get('branch')
+        enrollment_number = data.get('enrollment_number')
 
-        # Check domain choices
         if domain not in DOMAINS:
             raise ValidationError(f"Invalid domain. Must be one of: {', '.join(DOMAINS)}", {"domain": ["Invalid domain."]})
 
-        # Check unique constraints manually to raise clean ConflictError
+        batch = Batch.objects(batch_id=batch_id).first()
+        if not batch:
+            raise ValidationError(f"Batch {batch_id} does not exist.", {"batch_id": ["Invalid batch."]})
+
         if Trainee.objects(roll_number=roll_number, is_active=True).first():
             raise ConflictError("Roll number already exists.", {"roll_number": "A trainee with this roll number already exists."})
         if Trainee.objects(email=email, is_active=True).first():
             raise ConflictError("Email already exists.", {"email": "A trainee with this email address already exists."})
 
-        # Save trainee document
         trainee = Trainee(
             roll_number=roll_number,
-            full_name=full_name,
+            first_name=first_name,
+            last_name=last_name,
             email=email,
             domain=domain,
-            batch=batch,
-            phone=phone
+            batch_id=batch,
+            section=section,
+            phone=phone,
+            college_name=college_name,
+            father_name=father_name,
+            father_phone=father_phone,
+            mother_name=mother_name,
+            mother_phone=mother_phone,
+            year=year,
+            branch=branch,
+            enrollment_number=enrollment_number
         )
         trainee.save()
 
-        # Provision Auth User
-        default_pwd = TraineeService._build_default_password(full_name, roll_number)
+        default_pwd = TraineeService._build_default_password(first_name, roll_number)
         try:
             AuthService.create_user(
                 email=email,
                 password_raw=default_pwd,
                 role='trainee',
-                full_name=full_name,
+                full_name=f"{first_name or ''} {last_name or ''}".strip(),
                 trainee_id=str(trainee.id)
             )
         except ValidationError:
-            # Clean up trainee if User provisioning fails
             trainee.delete()
             raise ConflictError("A user account with this email address already exists.")
 
-        # Audit Log
         AuditLog(
             actor_id=actor_id,
             action="CREATE_TRAINEE",
@@ -78,25 +97,41 @@ class TraineeService:
         """Update trainee details, keeping linked User credentials in sync."""
         try:
             trainee = Trainee.objects.get(pk=trainee_id, is_active=True)
-        except:
+        except Exception:
             raise NotFoundError("Trainee not found.")
 
         before_state = {
             "roll_number": trainee.roll_number,
-            "full_name": trainee.full_name,
+            "first_name": trainee.first_name,
+            "last_name": trainee.last_name,
             "email": trainee.email,
             "domain": trainee.domain,
-            "batch": trainee.batch,
-            "phone": trainee.phone
+            "batch_id": trainee.batch_id.batch_id if trainee.batch_id else None,
+            "section": trainee.section,
+            "phone": trainee.phone,
+            "college_name": trainee.college_name,
+            "father_name": trainee.father_name,
+            "father_phone": trainee.father_phone,
+            "mother_name": trainee.mother_name,
+            "mother_phone": trainee.mother_phone,
+            "year": trainee.year,
+            "branch": trainee.branch,
+            "enrollment_number": trainee.enrollment_number,
         }
 
-        # Check updates and validate constraints
         email = data.get('email')
         roll_number = data.get('roll_number')
         domain = data.get('domain')
+        batch_id = data.get('batch_id')
 
         if domain and domain not in DOMAINS:
             raise ValidationError(f"Invalid domain. Must be one of: {', '.join(DOMAINS)}", {"domain": ["Invalid domain."]})
+
+        if batch_id:
+            batch = Batch.objects(batch_id=batch_id).first()
+            if not batch:
+                raise ValidationError(f"Batch {batch_id} does not exist.", {"batch_id": ["Invalid batch."]})
+            trainee.batch_id = batch
 
         if roll_number and roll_number != trainee.roll_number:
             if Trainee.objects(roll_number=roll_number, is_active=True).first():
@@ -110,27 +145,31 @@ class TraineeService:
             trainee.email = email
             email_changed = True
 
-        if data.get('full_name'):
-            trainee.full_name = data.get('full_name')
+        if data.get('first_name') is not None:
+            trainee.first_name = data.get('first_name')
+        if data.get('last_name') is not None:
+            trainee.last_name = data.get('last_name')
         if 'phone' in data:
             trainee.phone = data.get('phone')
-        if data.get('batch'):
-            trainee.batch = data.get('batch')
+        if data.get('section'):
+            trainee.section = data.get('section')
         if domain:
             trainee.domain = domain
+            
+        for field in ['college_name', 'father_name', 'father_phone', 'mother_name', 'mother_phone', 'year', 'branch', 'enrollment_number']:
+            if field in data:
+                setattr(trainee, field, data.get(field))
 
         trainee.save()
 
-        # Update linked user account if email or name changed
         user = User.objects(trainee_id=str(trainee.id), is_active=True).first()
         if user:
             if email_changed:
                 user.email = trainee.email
-            if data.get('full_name'):
-                user.full_name = trainee.full_name
+            if data.get('first_name') or data.get('last_name'):
+                user.full_name = f"{trainee.first_name or ''} {trainee.last_name or ''}".strip()
             user.save()
 
-        # Audit Log
         AuditLog(
             actor_id=actor_id,
             action="UPDATE_TRAINEE",
@@ -147,20 +186,16 @@ class TraineeService:
         """Soft delete trainee and deactivate linked User credentials."""
         try:
             trainee = Trainee.objects.get(pk=trainee_id, is_active=True)
-        except:
+        except Exception:
             raise NotFoundError("Trainee not found.")
 
-        # Soft delete trainee
         trainee.soft_delete()
 
-        # Deactivate associated User
         user = User.objects(trainee_id=str(trainee.id), is_active=True).first()
         if user:
             user.soft_delete()
-            # Revoke all active sessions
             RefreshToken.objects(user_id=str(user.id)).delete()
 
-        # Audit Log
         AuditLog(
             actor_id=actor_id,
             action="DELETE_TRAINEE",
@@ -171,15 +206,13 @@ class TraineeService:
     @classmethod
     def bulk_import_trainees(cls, actor_id: str, csv_file_wrapper) -> dict:
         """Parse, validate, and bulk-import trainees from a CSV file."""
-        # Read the file
         try:
             file_data = csv_file_wrapper.read().decode('utf-8')
             csv_reader = csv.DictReader(io.StringIO(file_data))
         except Exception as e:
             raise ValidationError(f"Failed to parse CSV file: {str(e)}")
 
-        # Validate headers
-        required_headers = ['roll_number', 'full_name', 'email', 'domain', 'batch']
+        required_headers = ['roll_number', 'first_name', 'email', 'domain', 'batch_id', 'section']
         missing_headers = [h for h in required_headers if h not in csv_reader.fieldnames]
         if missing_headers:
             raise ValidationError(f"CSV is missing required columns: {', '.join(missing_headers)}")
@@ -189,32 +222,33 @@ class TraineeService:
         errors = []
 
         for row_idx, row in enumerate(csv_reader, start=1):
-            # Clean values
             row_data = {k: v.strip() if v else '' for k, v in row.items()}
             roll_number = row_data.get('roll_number')
             email = row_data.get('email')
-            full_name = row_data.get('full_name')
+            first_name = row_data.get('first_name')
+            last_name = row_data.get('last_name')
             domain = row_data.get('domain')
-            batch = row_data.get('batch')
+            batch_id = row_data.get('batch_id')
+            section = row_data.get('section')
             phone = row_data.get('phone', '')
 
-            if not all([roll_number, email, full_name, domain, batch]):
+            if not all([roll_number, email, first_name, domain, batch_id, section]):
                 errors.append({"row": row_idx, "message": "Missing required fields on this row."})
                 continue
 
             try:
-                # Attempt to create the trainee
                 cls.create_trainee(actor_id, {
                     "roll_number": roll_number,
                     "email": email,
-                    "full_name": full_name,
+                    "first_name": first_name,
+                    "last_name": last_name,
                     "domain": domain,
-                    "batch": batch,
+                    "batch_id": batch_id,
+                    "section": section,
                     "phone": phone
                 })
                 created_count += 1
             except ConflictError as ce:
-                # Treat duplicate constraints as skipped/warning
                 skipped_count += 1
                 errors.append({"row": row_idx, "roll_number": roll_number, "message": ce.message})
             except ValidationError as ve:
@@ -227,3 +261,111 @@ class TraineeService:
             "skipped": skipped_count,
             "errors": errors
         }
+
+
+class BatchService:
+    """Service class handling Batch operations."""
+
+    @staticmethod
+    def get_batches(status: str = None) -> list:
+        query = Batch.objects(is_active=True)
+        if status:
+            query = query(batch_status=status)
+        return list(query)
+
+    @staticmethod
+    def create_batch(actor_id: str, data: dict) -> Batch:
+        batch_id = data.get('batch_id')
+        batch_year = data.get('batch_year')
+        batch_status = data.get('batch_status', 'active')
+
+        if not batch_id or not batch_year:
+            raise ValidationError("batch_id and batch_year are required.")
+
+        if Batch.objects(batch_id=batch_id).first():
+            raise ConflictError(f"Batch with ID {batch_id} already exists.")
+
+        if batch_status == 'active':
+            # Set all other active batches to completed
+            Batch.objects(batch_status='active').update(batch_status='completed')
+            # Automatically update PortalSettings batch identifier
+            from apps.authentication.models import PortalSettings
+            settings = PortalSettings.objects.first()
+            if settings:
+                settings.batch_identifier = batch_id
+                settings.save()
+
+        batch = Batch(
+            batch_id=batch_id,
+            batch_year=batch_year,
+            batch_status=batch_status
+        )
+        batch.save()
+
+        AuditLog(
+            actor_id=actor_id,
+            action="CREATE_BATCH",
+            target_type="Batch",
+            target_id=str(batch.batch_id),
+            after_state={"batch_id": batch_id, "batch_year": batch_year, "batch_status": batch_status}
+        ).save()
+
+        return batch
+
+    @staticmethod
+    def update_batch(actor_id: str, batch_id: str, data: dict) -> Batch:
+        batch = Batch.objects(batch_id=batch_id, is_active=True).first()
+        if not batch:
+            raise NotFoundError("Batch not found.")
+
+        before_state = {"batch_year": batch.batch_year, "batch_status": batch.batch_status}
+
+        new_status = data.get('batch_status')
+        if new_status == 'active' and batch.batch_status != 'active':
+            # Set all other active batches to completed
+            Batch.objects(batch_status='active').update(batch_status='completed')
+            # Automatically update PortalSettings batch identifier
+            from apps.authentication.models import PortalSettings
+            settings = PortalSettings.objects.first()
+            if settings:
+                settings.batch_identifier = batch_id
+                settings.save()
+
+        if 'batch_year' in data:
+            batch.batch_year = data['batch_year']
+        if 'batch_status' in data:
+            batch.batch_status = data['batch_status']
+
+        batch.save()
+
+        AuditLog(
+            actor_id=actor_id,
+            action="UPDATE_BATCH",
+            target_type="Batch",
+            target_id=str(batch.batch_id),
+            before_state=before_state,
+            after_state={"batch_year": batch.batch_year, "batch_status": batch.batch_status}
+        ).save()
+
+        return batch
+
+    @staticmethod
+    def delete_batch(actor_id: str, batch_id: str):
+        batch = Batch.objects(batch_id=batch_id, is_active=True).first()
+        if not batch:
+            raise NotFoundError("Batch not found.")
+
+        # Check if any trainees are linked to this batch
+        if Trainee.objects(batch_id=batch, is_active=True).count() > 0:
+            raise ConflictError("Cannot delete batch as it has active trainees linked to it.")
+
+        batch.is_active = False
+        batch.save()
+
+        AuditLog(
+            actor_id=actor_id,
+            action="DELETE_BATCH",
+            target_type="Batch",
+            target_id=str(batch.batch_id),
+            after_state={"is_active": False}
+        ).save()

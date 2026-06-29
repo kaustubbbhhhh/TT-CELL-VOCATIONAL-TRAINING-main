@@ -28,6 +28,13 @@ class AttendanceRegisterView(APIView):
 
         if trainee_id:
             query_filters['trainee_id'] = trainee_id
+        else:
+            from apps.authentication.models import PortalSettings
+            from apps.trainees.models import Trainee
+            settings = PortalSettings.objects.first()
+            if settings and settings.batch_identifier:
+                active_trainee_ids = [str(t.id) for t in Trainee.objects(batch_id=settings.batch_identifier, is_active=True)]
+                query_filters['trainee_id__in'] = active_trainee_ids
 
         queryset = AttendanceRecord.objects(**query_filters).order_by('-date')
 

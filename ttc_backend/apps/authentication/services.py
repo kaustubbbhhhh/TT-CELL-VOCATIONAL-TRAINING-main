@@ -6,7 +6,7 @@ import jwt
 from django.conf import settings
 from django.contrib.auth.hashers import check_password as check_django_password
 from django.utils import timezone
-from apps.authentication.models import User, RefreshToken, AuditLog
+from apps.authentication.models import User, RefreshToken, AuditLog, BlacklistedToken
 from core.exceptions import AuthenticationFailed, LockoutError, ValidationError, NotFoundError
 
 # JWT Configurations
@@ -55,7 +55,7 @@ class AuthService:
     def issue_tokens(cls, user: User):
         """Issue access token (JWT) and database-backed refresh token."""
         # Generate Access Token (RS256)
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
         payload = {
             'user_id': str(user.id),
             'email': user.email,
@@ -90,7 +90,7 @@ class AuthService:
             raise AuthenticationFailed("Invalid refresh token.")
 
         # Check if expired
-        if token_doc.expires_at < datetime.datetime.utcnow():
+        if token_doc.expires_at < datetime.datetime.now(datetime.UTC).replace(tzinfo=None):
             token_doc.delete()
             raise AuthenticationFailed("Refresh token has expired.")
 
@@ -120,18 +120,29 @@ class AuthService:
         except User.DoesNotExist:
             raise AuthenticationFailed("Invalid email or password.")
 
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
 
         # Check if locked
-        if user.locked_until and user.locked_until > now:
-            minutes_left = int((user.locked_until - now).total_seconds() / 60) + 1
-            raise LockoutError(f"Account is locked due to too many failed attempts. Try again in {minutes_left} minutes.")
+        if user.locked_until:
+            if user.locked_until > now:
+                total_seconds = (user.locked_until - now).total_seconds()
+                if total_seconds > 3600:
+                    hours_left = int(total_seconds / 3600) + 1
+                    raise LockoutError(f"Account is locked due to too many failed attempts. Try again in {hours_left} hours.")
+                else:
+                    minutes_left = int(total_seconds / 60) + 1
+                    raise LockoutError(f"Account is locked due to too many failed attempts. Try again in {minutes_left} minutes.")
+            else:
+                # Lock has expired, reset state
+                user.locked_until = None
+                user.failed_attempts = 0
+                user.save()
 
         # Verify password
         if not check_password(password, user.password_hash):
             user.failed_attempts += 1
             if user.failed_attempts >= 5:
-                user.locked_until = now + datetime.timedelta(minutes=30)
+                user.locked_until = now + datetime.timedelta(hours=24)
                 user.save()
                 
                 # Audit log for lockout
@@ -143,7 +154,7 @@ class AuthService:
                     after_state={"locked_until": user.locked_until.isoformat()}
                 ).save()
                 
-                raise LockoutError("Account has been locked for 30 minutes due to 5 consecutive failures.")
+                raise LockoutError("Account has been locked for 24 hours due to 5 consecutive failures.")
             
             user.save()
             raise AuthenticationFailed("Invalid email or password.")
@@ -169,12 +180,42 @@ class AuthService:
         return user, access_token, refresh_token
 
     @staticmethod
-    def logout(token_str: str):
+    def logout(token_str: str, access_token_str: str = None):
         """Invalidate refresh token upon logout."""
         RefreshToken.objects(token=token_str).delete()
+        if access_token_str:
+            AuthService.blacklist_access_token(access_token_str)
+
+    @staticmethod
+    def blacklist_access_token(access_token_str: str):
+        if not access_token_str:
+            return
+        try:
+            parts = access_token_str.split('.')
+            if len(parts) != 3:
+                return
+            signature = parts[2]
+            
+            # Check if already blacklisted
+            if BlacklistedToken.objects(token_signature=signature).first():
+                return
+                
+            public_key_path = getattr(settings, 'JWT_PUBLIC_KEY_PATH', 'jwt_public.pem')
+            with open(public_key_path, 'r') as f:
+                public_key = f.read()
+                
+            payload = jwt.decode(access_token_str, public_key, algorithms=['RS256'])
+            expires_at = datetime.datetime.utcfromtimestamp(payload['exp'])
+            
+            BlacklistedToken(
+                token_signature=signature,
+                expires_at=expires_at
+            ).save()
+        except Exception as e:
+            logging.error(f"Failed to blacklist token: {e}")
 
     @classmethod
-    def change_password(cls, user_id: str, old_password: str, new_password: str):
+    def change_password(cls, user_id: str, old_password: str, new_password: str, access_token_str: str = None):
         """Update password for an authenticated user, and revoke all active refresh tokens."""
         try:
             user = User.objects.get(id=user_id, is_active=True)
@@ -192,6 +233,8 @@ class AuthService:
 
         # Revoke all refresh tokens for this user
         RefreshToken.objects(user_id=str(user.id)).delete()
+        if access_token_str:
+            cls.blacklist_access_token(access_token_str)
 
         # Audit log
         AuditLog(
@@ -202,7 +245,7 @@ class AuthService:
         ).save()
 
     @classmethod
-    def admin_reset_password(cls, admin_id: str, target_user_id: str, new_password: str):
+    def admin_reset_password(cls, admin_id: str, target_user_id: str, new_password: str, admin_access_token_str: str = None):
         """Allows an administrator to reset a user's password and flag it for mandatory change."""
         try:
             user = User.objects.get(id=target_user_id, is_active=True)
@@ -215,6 +258,11 @@ class AuthService:
 
         # Invalidate target user's active sessions
         RefreshToken.objects(user_id=str(user.id)).delete()
+        
+        # Note: We cannot easily blacklist the target user's access token here without maintaining a mapping of user -> access tokens.
+        # But we can blacklist the admin's token if we wanted to (though we don't want to log the admin out).
+        # To truly invalidate target user's access tokens immediately, we could add a `tokens_revoked_at` field to User.
+        # For now, we rely on the 15m expiration + refresh token revocation.
 
         # Audit log
         AuditLog(
@@ -259,7 +307,7 @@ class AuthService:
         
         # Save token in RefreshToken collection with a specific user_id prefix, or simply save in the audit logs.
         # Let's use RefreshToken and set it as a short expiration (e.g. 15 minutes) with token string "reset_<token>".
-        expires_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
+        expires_at = datetime.datetime.now(datetime.UTC).replace(tzinfo=None) + datetime.timedelta(minutes=15)
         RefreshToken(
             token=f"reset_{reset_token}",
             user_id=str(user.id),
@@ -286,7 +334,7 @@ class AuthService:
         except RefreshToken.DoesNotExist:
             raise ValidationError("Invalid or expired password reset token.")
 
-        if token_doc.expires_at < datetime.datetime.utcnow():
+        if token_doc.expires_at < datetime.datetime.now(datetime.UTC).replace(tzinfo=None):
             token_doc.delete()
             raise ValidationError("Password reset token has expired.")
 

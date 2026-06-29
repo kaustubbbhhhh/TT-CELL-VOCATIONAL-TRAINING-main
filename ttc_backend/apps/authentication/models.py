@@ -74,3 +74,16 @@ class PortalSettings(Document):
         'collection': 'portal_settings'
     }
 
+class BlacklistedToken(Document):
+    """Document storing revoked access tokens to prevent reuse."""
+    token_signature = StringField(unique=True, required=True)
+    expires_at = DateTimeField(required=True)
+    created_at = DateTimeField(default=datetime.datetime.utcnow)
+
+    meta = {
+        'collection': 'blacklisted_tokens',
+        'indexes': [
+            'token_signature',
+            {'fields': ['expires_at'], 'expireAfterSeconds': 0}  # Auto TTL deletion
+        ]
+    }

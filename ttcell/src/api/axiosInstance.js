@@ -8,13 +8,10 @@ const axiosInstance = axios.create({
   withCredentials: true, // Send cookies (refresh_token)
 });
 
-// Request interceptor to attach access token
+// Request interceptor to attach access token (from memory if not already set by defaults)
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
+    // Rely on axiosInstance.defaults.headers.common['Authorization'] which is kept in memory
     return config;
   },
   (error) => {
@@ -74,7 +71,7 @@ axiosInstance.interceptors.response.use(
         const response = await axios.post('/api/v1/auth/refresh/', {}, { withCredentials: true });
         const { access_token } = response.data.data;
 
-        localStorage.setItem('access_token', access_token);
+        // Update in-memory headers
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
         originalRequest.headers['Authorization'] = `Bearer ${access_token}`;
 
@@ -87,7 +84,6 @@ axiosInstance.interceptors.response.use(
         isRefreshing = false;
         
         // Log out user as the refresh token has expired or is invalid
-        localStorage.removeItem('access_token');
         localStorage.removeItem('user');
         window.dispatchEvent(new Event('auth_session_expired'));
         

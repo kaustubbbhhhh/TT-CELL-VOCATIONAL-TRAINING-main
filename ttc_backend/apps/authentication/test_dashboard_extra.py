@@ -9,23 +9,27 @@ from apps.authentication.models import PortalSettings
 
 pytestmark = pytest.mark.django_db
 
-def test_analytics_view_success(admin_user, auth_headers_admin):
+def test_analytics_view_success(admin_user, auth_headers_admin, batch_doc):
     # Setup some test data
     trainee = Trainee(
         roll_number="TT24-002",
-        full_name="Meera Rao",
+        first_name="Meera",
+        last_name="Rao",
         email="meera@ttcell",
         domain="Data Sci",
-        batch="Batch 2024-B"
+        batch_id=batch_doc,
+        section="A"
     ).save()
 
     # Inactive trainee for dropout rate
     Trainee(
         roll_number="TT24-999",
-        full_name="Dropout Trainee",
+        first_name="Dropout",
+        last_name="Trainee",
         email="dropout@ttcell",
         domain="AI/ML",
-        batch="Batch 2024-B",
+        batch_id=batch_doc,
+        section="A",
         is_active=False
     ).save()
 
@@ -49,7 +53,7 @@ def test_analytics_view_success(admin_user, auth_headers_admin):
 
     AttendanceRecord(
         trainee_id=trainee,
-        date=datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0),
+        date=datetime.datetime.now(datetime.UTC).replace(hour=0, minute=0, second=0, microsecond=0),
         session_name="Lab",
         status="present"
     ).save()
@@ -114,14 +118,16 @@ def test_settings_view_success(admin_user, auth_headers_admin):
     assert response.data['data']['min_attendance_threshold'] == 80
     assert response.data['data']['email_at_risk_alerts'] is False
 
-def test_reports_view_success(admin_user, auth_headers_admin):
+def test_reports_view_success(admin_user, auth_headers_admin, batch_doc):
     # Setup some test data
     Trainee(
         roll_number="TT24-002",
-        full_name="Meera Rao",
+        first_name="Meera",
+        last_name="Rao",
         email="meera@ttcell",
         domain="Data Sci",
-        batch="Batch 2024-B"
+        batch_id=batch_doc,
+        section="A"
     ).save()
 
     client = APIClient()

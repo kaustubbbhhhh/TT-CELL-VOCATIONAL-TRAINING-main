@@ -45,7 +45,7 @@ class ProjectService:
         """Update project details."""
         try:
             project = Project.objects.get(id=project_id, is_active=True)
-        except:
+        except Exception:
             raise NotFoundError("Project not found.")
 
         before_state = {
@@ -104,7 +104,7 @@ class ProjectService:
         """Set project is_archived to True."""
         try:
             project = Project.objects.get(id=project_id, is_active=True)
-        except:
+        except Exception:
             raise NotFoundError("Project not found.")
 
         project.is_archived = True
@@ -125,7 +125,7 @@ class ProjectService:
         """Set project is_archived to False."""
         try:
             project = Project.objects.get(id=project_id, is_active=True)
-        except:
+        except Exception:
             raise NotFoundError("Project not found.")
 
         project.is_archived = False
@@ -146,7 +146,7 @@ class ProjectService:
         """Assign one or multiple trainees to a project."""
         try:
             project = Project.objects.get(id=project_id, is_active=True)
-        except:
+        except Exception:
             raise NotFoundError("Project not found.")
 
         # Business Rule: Cannot assign to archived project
@@ -160,7 +160,7 @@ class ProjectService:
         for tid in trainee_ids:
             try:
                 trainee = Trainee.objects.get(pk=tid, is_active=True)
-            except:
+            except Exception:
                 warnings.append(f"Trainee ID '{tid}' not found or inactive. Skipping.")
                 skipped_count += 1
                 continue
@@ -204,12 +204,12 @@ class ProjectService:
         """Remove a trainee assignment from a project."""
         try:
             project = Project.objects.get(id=project_id, is_active=True)
-        except:
+        except Exception:
             raise NotFoundError("Project not found.")
 
         try:
             trainee = Trainee.objects.get(pk=trainee_id)
-        except:
+        except Exception:
             raise NotFoundError("Trainee not found.")
 
         deleted_count = ProjectAssignment.objects(project_id=project, trainee_id=trainee).delete()
@@ -230,7 +230,7 @@ class ProjectService:
         """List all trainees assigned to a project."""
         try:
             project = Project.objects.get(id=project_id, is_active=True)
-        except:
+        except Exception:
             raise NotFoundError("Project not found.")
 
         assignments = ProjectAssignment.objects(project_id=project)

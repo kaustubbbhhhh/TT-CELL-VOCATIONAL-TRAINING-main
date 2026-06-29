@@ -1,9 +1,9 @@
 import os
-import json
 import jwt
 from django.http import JsonResponse
 from django.conf import settings
 from core.auth_user import AuthUser
+from apps.authentication.models import BlacklistedToken
 
 # Public paths that do not require JWT authorization
 PUBLIC_PATHS = [
@@ -65,6 +65,13 @@ class JWTMiddleware:
             return self._unauthorized_response("Token has expired.", "TOKEN_EXPIRED")
         except jwt.InvalidTokenError as e:
             return self._unauthorized_response(f"Invalid token: {str(e)}", "INVALID_TOKEN")
+
+        # Check if token is blacklisted (revoked)
+        parts = token.split('.')
+        if len(parts) == 3:
+            signature = parts[2]
+            if BlacklistedToken.objects(token_signature=signature).first():
+                return self._unauthorized_response("Token has been revoked.", "TOKEN_REVOKED")
 
         # Extracted claims
         user_id = payload.get('user_id')

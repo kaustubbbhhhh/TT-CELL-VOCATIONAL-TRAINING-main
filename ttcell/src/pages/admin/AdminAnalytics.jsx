@@ -5,13 +5,19 @@ import {
   TableContainer, Chip, LinearProgress, CircularProgress,
   TextField, InputAdornment, MenuItem, Select,
   Snackbar, Alert, Switch,
+  Dialog, DialogTitle, DialogContent, DialogActions, IconButton,
+  FormControl, InputLabel,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
 import {
   MetricCard, BarChart, AnalyticsRow, PageHeader,
   Breadcrumb, DomainChip,
 } from '../../components/UIComponents';
-import { analyticsApi, repositoryApi, settingsApi, reportsApi } from '../../api/portalApi';
+import { analyticsApi, repositoryApi, settingsApi, reportsApi, batchesApi } from '../../api/portalApi';
 import { useNavigate } from 'react-router-dom';
 
 // ── ANALYTICS ─────────────────────────────────────────────────
@@ -37,7 +43,7 @@ export function AnalyticsPage() {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-        <CircularProgress sx={{ color: '#4A6331' }} />
+        <CircularProgress sx={{ color: '#4B5D3A' }} />
       </Box>
     );
   }
@@ -53,7 +59,7 @@ export function AnalyticsPage() {
     top_performers = [],
   } = data || {};
 
-  const domainColors = { 'AI/ML': '#4A6331', 'Web Dev': '#3D5A80', 'Cyber Sec': '#C0392B', 'Data Sci': '#B8960C', 'IoT': '#4A6331', 'Embedded': '#C2185B' };
+  const domainColors = { 'AI/ML': '#4B5D3A', 'Web Dev': '#3D5A80', 'Cyber Sec': '#C0392B', 'Data Sci': '#B8960C', 'IoT': '#4B5D3A', 'Embedded': '#C2185B' };
 
   return (
     <Box>
@@ -61,7 +67,7 @@ export function AnalyticsPage() {
       <PageHeader title="Training Analytics" subtitle={`${total_trainees} trainees · Live data from MongoDB`} />
 
       <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
-        <Grid item xs={6} md={3}><MetricCard label="Completion Rate" value={`${completion_rate}%`} delta="Projects submitted or completed" deltaUp={completion_rate >= 70} accentColor="#4A6331" /></Grid>
+        <Grid item xs={6} md={3}><MetricCard label="Completion Rate" value={`${completion_rate}%`} delta="Projects submitted or completed" deltaUp={completion_rate >= 70} accentColor="#4B5D3A" /></Grid>
         <Grid item xs={6} md={3}><MetricCard label="Avg Project Score" value={String(avg_project_score)} delta="Across all scored projects" deltaUp={avg_project_score >= 75} accentColor="#B8960C" /></Grid>
         <Grid item xs={6} md={3}><MetricCard label="Total Trainees" value={String(total_trainees)} delta="Active profiles" deltaUp accentColor="#3D5A80" /></Grid>
         <Grid item xs={6} md={3}><MetricCard label="Dropout Rate" value={`${dropout_rate}%`} delta={dropout_rate <= 5 ? "Within acceptable range" : "Needs attention"} deltaUp={dropout_rate <= 5} accentColor="#C0392B" /></Grid>
@@ -74,7 +80,7 @@ export function AnalyticsPage() {
               <Typography variant="h6" sx={{ mb: 2 }}>Average Score by Domain</Typography>
               {domain_scores.length > 0 ? (
                 domain_scores.map(s => (
-                  <AnalyticsRow key={s.name} label={s.name} value={Math.round(s.score)} total={100} color={domainColors[s.name] || '#4A6331'} />
+                  <AnalyticsRow key={s.name} label={s.name} value={Math.round(s.score)} total={100} color={domainColors[s.name] || '#4B5D3A'} />
                 ))
               ) : (
                 <Typography variant="body2" sx={{ color: '#7A8B99', textAlign: 'center', py: 2 }}>No scored projects yet.</Typography>
@@ -126,7 +132,7 @@ export function AnalyticsPage() {
               {top_performers.length > 0 ? (
                 top_performers.map(p => {
                   const rankColors = [
-                    { c: '#4A6331', bg: '#EEF2E8' },
+                    { c: '#4B5D3A', bg: '#EEF2E8' },
                     { c: '#3D5A80', bg: '#EBF2F9' },
                     { c: '#B8960C', bg: '#FAF5DC' },
                   ];
@@ -138,7 +144,7 @@ export function AnalyticsPage() {
                         <Typography sx={{ fontSize: '0.8375rem', fontWeight: 700 }}>{p.name}</Typography>
                         <Typography variant="caption">{p.domain} · {p.attendance}% att · {p.projects_completed}</Typography>
                       </Box>
-                      <Typography sx={{ fontWeight: 800, color: '#4A6331', fontSize: '1rem' }}>{p.composite}</Typography>
+                      <Typography sx={{ fontWeight: 800, color: '#4B5D3A', fontSize: '1rem' }}>{p.composite}</Typography>
                     </Box>
                   );
                 })
@@ -177,12 +183,12 @@ export function ReportsPage() {
   };
 
   const reports = [
-    { icon: '📊', title: 'Attendance Report', body: 'Domain-wise and date-range attendance summaries with defaulters list and leave breakdown.', color: '#4A6331', variant: 'contained' },
+    { icon: '📊', title: 'Attendance Report', body: 'Domain-wise and date-range attendance summaries with defaulters list and leave breakdown.', color: '#4B5D3A', variant: 'contained' },
     { icon: '📁', title: 'Project Progress Report', body: 'Status of all active and completed projects with scoring breakdown and review comments.', color: '#3D5A80', variant: 'contained' },
     { icon: '🎓', title: 'Batch Performance Report', body: 'Overall cohort assessment: composite scores, attendance, project quality, readiness index.', color: '#B8960C', variant: 'contained' },
     { icon: '⚠️', title: 'At-Risk Trainee Report', body: 'Trainees below the 75% attendance threshold or with outstanding project submissions.', color: '#C0392B', variant: 'danger' },
     { icon: '📈', title: 'Placement Analytics Report', body: 'Historical placement data, hiring organisations, salary benchmarks, and domain-wise outcomes.', color: '#3D5A80', variant: 'outlined' },
-    { icon: '🏛️', title: 'MoD Compliance Report', body: 'Ministry of Defence required format for quarterly submission to Training Directorate, Army HQ.', color: '#4A6331', variant: 'contained' },
+    { icon: '🏛️', title: 'MoD Compliance Report', body: 'Ministry of Defence required format for quarterly submission to Training Directorate, Army HQ.', color: '#4B5D3A', variant: 'contained' },
   ];
 
   return (
@@ -290,7 +296,7 @@ export function RepositoryPage() {
 
       <Card>
         {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress sx={{ color: '#4A6331' }} /></Box>
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress sx={{ color: '#4B5D3A' }} /></Box>
         ) : (
           <>
             <TableContainer>
@@ -318,7 +324,7 @@ export function RepositoryPage() {
                         <TableCell>
                           {r.score != null ? (
                             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.25 }}>
-                              <Typography sx={{ fontWeight: 800, color: '#4A6331', fontSize: '1rem' }}>{r.score}</Typography>
+                              <Typography sx={{ fontWeight: 800, color: '#4B5D3A', fontSize: '1rem' }}>{r.score}</Typography>
                               <Typography sx={{ fontSize: '0.72rem', color: '#7A8B99' }}>/100</Typography>
                             </Box>
                           ) : (
@@ -361,7 +367,7 @@ function ToggleRow({ label, sub, enabled, onChange }) {
         <Typography sx={{ fontSize: '0.8375rem', fontWeight: 700 }}>{label}</Typography>
         {sub && <Typography variant="caption" sx={{ color: '#7A8B99' }}>{sub}</Typography>}
       </Box>
-      <Switch checked={enabled} onChange={onChange} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#4A6331' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#4A6331' } }} />
+      <Switch checked={enabled} onChange={onChange} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#4B5D3A' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#4B5D3A' } }} />
     </Box>
   );
 }
@@ -382,11 +388,28 @@ export function SettingsPage() {
     new_trainee_registration_alerts: false,
   });
 
+  const [batches, setBatches] = useState([]);
+  const [batchModalOpen, setBatchModalOpen] = useState(false);
+  const [newBatch, setNewBatch] = useState({ batch_id: '', batch_year: new Date().getFullYear(), batch_status: 'active' });
+  const [addBatchFormOpen, setAddBatchFormOpen] = useState(false);
+  const [editingBatchId, setEditingBatchId] = useState(null);
+  const [editingBatchData, setEditingBatchData] = useState({ batch_year: '', batch_status: 'active' });
+
+  async function loadBatches() {
+    try {
+      const bRes = await batchesApi.list();
+      setBatches(bRes.data || []);
+    } catch (err) {
+      console.error('Failed to load batches:', err);
+    }
+  }
+
   useEffect(() => {
     async function load() {
       try {
         const res = await settingsApi.get();
         setSettings(res.data);
+        await loadBatches();
       } catch (err) {
         console.error('Failed to load settings:', err);
       } finally {
@@ -409,10 +432,54 @@ export function SettingsPage() {
     }
   };
 
+  const handleAddBatch = async () => {
+    if (!newBatch.batch_id.trim()) {
+      setToast({ open: true, message: 'Batch ID is required.', severity: 'warning' });
+      return;
+    }
+    if (!newBatch.batch_id.match(/^B_\d+$/)) {
+      setToast({ open: true, message: 'Batch ID must match pattern B_ followed by digits (e.g. B_2025).', severity: 'warning' });
+      return;
+    }
+    try {
+      await batchesApi.create(newBatch);
+      setToast({ open: true, message: 'Batch created successfully.', severity: 'success' });
+      await loadBatches();
+      setNewBatch({ batch_id: '', batch_year: new Date().getFullYear(), batch_status: 'active' });
+      setAddBatchFormOpen(false);
+    } catch (err) {
+      console.error(err);
+      setToast({ open: true, message: err.response?.data?.message || 'Failed to create batch.', severity: 'error' });
+    }
+  };
+
+  const handleUpdateBatch = async (batchId) => {
+    try {
+      await batchesApi.update(batchId, editingBatchData);
+      setToast({ open: true, message: 'Batch updated successfully.', severity: 'success' });
+      await loadBatches();
+      setEditingBatchId(null);
+    } catch (err) {
+      console.error(err);
+      setToast({ open: true, message: err.response?.data?.message || 'Failed to update batch.', severity: 'error' });
+    }
+  };
+
+  const handleDeleteBatch = async (batchId) => {
+    try {
+      await batchesApi.delete(batchId);
+      setToast({ open: true, message: 'Batch deleted successfully.', severity: 'success' });
+      await loadBatches();
+    } catch (err) {
+      console.error(err);
+      setToast({ open: true, message: err.response?.data?.message || 'Failed to delete batch.', severity: 'error' });
+    }
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-        <CircularProgress sx={{ color: '#4A6331' }} />
+        <CircularProgress sx={{ color: '#4B5D3A' }} />
       </Box>
     );
   }
@@ -426,29 +493,74 @@ export function SettingsPage() {
           <Card sx={{ mb: 2.5 }}>
             <CardContent>
               <Typography variant="h6" sx={{ mb: 2.5 }}>General Configuration</Typography>
-              {[
-                { label: 'Organisation Name', key: 'org_name' },
-                { label: 'Current Batch Identifier', key: 'batch_identifier', hint: 'Used across all reports, dashboards, and trainee-facing views.' },
-                { label: 'Min. Attendance Threshold (%)', key: 'min_attendance_threshold', type: 'number', hint: 'Trainees below this trigger an automatic at-risk flag.' },
-                { label: 'Academic Year', key: 'academic_year' },
-              ].map(f => (
-                <Box key={f.key} sx={{ mb: 2 }}>
-                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mb: 0.75 }}>{f.label}</Typography>
-                  <TextField
+              
+              <Box sx={{ mb: 2 }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mb: 0.75 }}>Organisation Name</Typography>
+                <TextField
+                  size="small"
+                  fullWidth
+                  value={settings.org_name || ''}
+                  onChange={e => setSettings({ ...settings, org_name: e.target.value })}
+                />
+              </Box>
+
+              <Box sx={{ mb: 2 }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mb: 0.75 }}>Current Batch Identifier</Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Select
                     size="small"
                     fullWidth
-                    type={f.type || 'text'}
-                    value={settings[f.key] || ''}
-                    onChange={e => setSettings({ ...settings, [f.key]: f.type === 'number' ? parseInt(e.target.value) || 0 : e.target.value })}
-                  />
-                  {f.hint && <Typography variant="caption" sx={{ mt: 0.5, display: 'block' }}>{f.hint}</Typography>}
+                    value={settings.batch_identifier || ''}
+                    onChange={e => setSettings({ ...settings, batch_identifier: e.target.value })}
+                  >
+                    {batches.map(b => (
+                      <MenuItem key={b.batch_id} value={b.batch_id}>
+                        {b.batch_id} ({b.batch_status})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <Button
+                    variant="outlined"
+                    onClick={() => setBatchModalOpen(true)}
+                    sx={{ borderColor: '#4B5D3A', color: '#4B5D3A', '&:hover': { borderColor: '#3D4A2F', background: 'rgba(75, 93, 58, 0.04)' } }}
+                  >
+                    Manage
+                  </Button>
                 </Box>
-              ))}
+                <Typography variant="caption" sx={{ mt: 0.5, display: 'block' }}>
+                  Used across all reports, dashboards, and trainee-facing views.
+                </Typography>
+              </Box>
+
+              <Box sx={{ mb: 2 }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mb: 0.75 }}>Min. Attendance Threshold (%)</Typography>
+                <TextField
+                  size="small"
+                  fullWidth
+                  type="number"
+                  value={settings.min_attendance_threshold || ''}
+                  onChange={e => setSettings({ ...settings, min_attendance_threshold: parseInt(e.target.value) || 0 })}
+                />
+                <Typography variant="caption" sx={{ mt: 0.5, display: 'block' }}>
+                  Trainees below this trigger an automatic at-risk flag.
+                </Typography>
+              </Box>
+
+              <Box sx={{ mb: 2 }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mb: 0.75 }}>Academic Year</Typography>
+                <TextField
+                  size="small"
+                  fullWidth
+                  value={settings.academic_year || ''}
+                  onChange={e => setSettings({ ...settings, academic_year: e.target.value })}
+                />
+              </Box>
+
               <Button
                 variant="contained"
                 onClick={handleSave}
                 disabled={saving}
-                sx={{ background: '#4A6331', '&:hover': { background: '#3A4E27' } }}
+                sx={{ background: '#4B5D3A', '&:hover': { background: '#3D4A2F' } }}
               >
                 {saving ? 'Saving…' : 'Save Configuration'}
               </Button>
@@ -534,9 +646,172 @@ export function SettingsPage() {
         </Grid>
       </Grid>
 
+      {/* Manage Batches Dialog */}
+      <Dialog open={batchModalOpen} onClose={() => setBatchModalOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          Manage Batches
+          <IconButton onClick={() => setBatchModalOpen(false)} size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Existing Batches</Typography>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={() => setAddBatchFormOpen(!addBatchFormOpen)}
+              sx={{ background: '#4B5D3A', '&:hover': { background: '#3D4A2F' } }}
+            >
+              Add Batch
+            </Button>
+          </Box>
+
+          {addBatchFormOpen && (
+            <Card variant="outlined" sx={{ mb: 3, p: 2, background: '#FAF8F3' }}>
+              <Typography sx={{ fontWeight: 700, mb: 2 }}>Create New Batch</Typography>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="Batch ID"
+                    size="small"
+                    placeholder="e.g. B_2025"
+                    fullWidth
+                    value={newBatch.batch_id}
+                    onChange={e => setNewBatch({ ...newBatch, batch_id: e.target.value })}
+                    helperText="Must match B_ followed by digits"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    label="Batch Year"
+                    size="small"
+                    type="number"
+                    fullWidth
+                    value={newBatch.batch_year}
+                    onChange={e => setNewBatch({ ...newBatch, batch_year: parseInt(e.target.value) || new Date().getFullYear() })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Status</InputLabel>
+                    <Select
+                      value={newBatch.batch_status}
+                      label="Status"
+                      onChange={e => setNewBatch({ ...newBatch, batch_status: e.target.value })}
+                    >
+                      <MenuItem value="active">Active</MenuItem>
+                      <MenuItem value="completed">Completed</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={2} sx={{ display: 'flex', gap: 1 }}>
+                  <Button variant="contained" size="small" onClick={handleAddBatch} sx={{ background: '#4B5D3A', '&:hover': { background: '#3D4A2F' } }}>
+                    Save
+                  </Button>
+                  <Button variant="outlined" size="small" onClick={() => setAddBatchFormOpen(false)}>
+                    Cancel
+                  </Button>
+                </Grid>
+              </Grid>
+            </Card>
+          )}
+
+          <TableContainer>
+            <Table size="small">
+              <TableHead sx={{ background: '#EBE9E1' }}>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700 }}>Batch ID</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Year</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700 }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {batches.map(b => {
+                  const isEditing = editingBatchId === b.batch_id;
+                  return (
+                    <TableRow key={b.batch_id}>
+                      <TableCell sx={{ fontFamily: 'JetBrains Mono', fontWeight: 600 }}>{b.batch_id}</TableCell>
+                      <TableCell>
+                        {isEditing ? (
+                          <TextField
+                            size="small"
+                            type="number"
+                            value={editingBatchData.batch_year}
+                            onChange={e => setEditingBatchData({ ...editingBatchData, batch_year: parseInt(e.target.value) || 0 })}
+                            sx={{ width: 100 }}
+                          />
+                        ) : b.batch_year}
+                      </TableCell>
+                      <TableCell>
+                        {isEditing ? (
+                          <Select
+                            size="small"
+                            value={editingBatchData.batch_status}
+                            onChange={e => setEditingBatchData({ ...editingBatchData, batch_status: e.target.value })}
+                          >
+                            <MenuItem value="active">Active</MenuItem>
+                            <MenuItem value="completed">Completed</MenuItem>
+                          </Select>
+                        ) : (
+                          <Chip
+                            label={b.batch_status.toUpperCase()}
+                            size="small"
+                            color={b.batch_status === 'active' ? 'success' : 'default'}
+                            sx={{ fontWeight: 700, fontSize: '0.65rem' }}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        {isEditing ? (
+                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                            <Button variant="contained" color="success" size="small" onClick={() => handleUpdateBatch(b.batch_id)}>
+                              Save
+                            </Button>
+                            <Button variant="outlined" size="small" onClick={() => setEditingBatchId(null)}>
+                              Cancel
+                            </Button>
+                          </Box>
+                        ) : (
+                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                setEditingBatchId(b.batch_id);
+                                setEditingBatchData({ batch_year: b.batch_year, batch_status: b.batch_status });
+                              }}
+                              sx={{ color: '#4B5D3A' }}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDeleteBatch(b.batch_id)}
+                              sx={{ color: '#C0392B' }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBatchModalOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
       <Snackbar open={toast.open} autoHideDuration={4000} onClose={() => setToast({ ...toast, open: false })}>
         <Alert severity={toast.severity} onClose={() => setToast({ ...toast, open: false })}>{toast.message}</Alert>
       </Snackbar>
     </Box>
   );
 }
+

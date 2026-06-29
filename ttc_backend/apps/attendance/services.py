@@ -28,7 +28,7 @@ class AttendanceService:
         """Mark or update a trainee's attendance for a specific date."""
         try:
             trainee = Trainee.objects.get(pk=trainee_id, is_active=True)
-        except:
+        except Exception:
             raise NotFoundError("Trainee not found.")
 
         normalized_date = cls._normalize_date(date)

@@ -4,7 +4,20 @@ import { Box, Typography, Button, Card, CardContent, Alert, IconButton } from '@
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import { useAuth } from '../../context/AuthContext';
+
+// Background Line Illustration pattern
+const LinePattern = () => (
+  <svg width="100%" height="100%" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', opacity: 0.05 }} xmlns="http://www.w3.org/2000/svg">
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#222222" strokeWidth="1"/>
+    </pattern>
+    <rect width="100%" height="100%" fill="url(#grid)" />
+    <path d="M0 0 L100% 100%" stroke="#222222" strokeWidth="1" strokeDasharray="5,5" />
+    <path d="M100% 0 L0 100%" stroke="#222222" strokeWidth="1" strokeDasharray="5,5" />
+  </svg>
+);
 
 const FormField = ({ label, type = 'text', placeholder, value, onChange }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -13,7 +26,7 @@ const FormField = ({ label, type = 'text', placeholder, value, onChange }) => {
 
   return (
     <Box sx={{ mb: 2 }}>
-      <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mb: 0.75, color: '#1A2332' }}>{label}</Typography>
+      <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, mb: 0.75, color: '#444444' }}>{label}</Typography>
       <Box sx={{ position: 'relative' }}>
         <Box
           component="input"
@@ -22,10 +35,13 @@ const FormField = ({ label, type = 'text', placeholder, value, onChange }) => {
           value={value}
           onChange={onChange}
           sx={{
-            width: '100%', p: '9px 12px', pr: isPassword ? '40px' : '12px', border: '1px solid #B8C5D3',
-            borderRadius: '8px', fontSize: '0.875rem', fontFamily: 'inherit',
-            outline: 'none', boxSizing: 'border-box', color: '#1A2332',
-            '&:focus': { borderColor: '#4A6331', boxShadow: '0 0 0 3px rgba(74,99,49,0.12)' },
+            width: '100%', p: '10px 14px', pr: isPassword ? '40px' : '14px', 
+            border: '1px solid #D6D0C4',
+            borderRadius: '4px', fontSize: '0.875rem', fontFamily: 'inherit',
+            outline: 'none', boxSizing: 'border-box', color: '#222222', background: '#FAF8F3',
+            transition: 'border-color 0.2s',
+            '&:focus': { borderColor: '#4B5D3A', boxShadow: 'inset 0 0 0 1px #4B5D3A' },
+            '&::placeholder': { color: '#888888', fontFamily: '"JetBrains Mono", monospace' }
           }}
         />
         {isPassword && (
@@ -34,7 +50,7 @@ const FormField = ({ label, type = 'text', placeholder, value, onChange }) => {
             sx={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', padding: '6px' }}
             tabIndex={-1}
           >
-            {showPassword ? <VisibilityOffOutlinedIcon fontSize="small" sx={{ color: '#7A8B99' }} /> : <VisibilityOutlinedIcon fontSize="small" sx={{ color: '#7A8B99' }} />}
+            {showPassword ? <VisibilityOffOutlinedIcon fontSize="small" sx={{ color: '#888888' }} /> : <VisibilityOutlinedIcon fontSize="small" sx={{ color: '#888888' }} />}
           </IconButton>
         )}
       </Box>
@@ -49,11 +65,6 @@ export function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-
-  const roleLabels = {
-    admin:   'Signing in as: Administrator',
-    trainee: 'Signing in as: Trainee',
-  };
 
   const handleRoleChange = (selectedRole) => {
     setRole(selectedRole);
@@ -75,77 +86,82 @@ export function LoginPage() {
   };
 
   return (
-    <Box sx={{ minHeight: 'calc(100vh - 58px)', background: '#1A2332', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-      <Box sx={{ position: 'absolute', bottom: -100, right: -100, width: 400, height: 400, border: '80px solid rgba(184,150,12,0.07)', borderRadius: '50%', pointerEvents: 'none' }} />
-      <Card sx={{ width: 420, position: 'relative', zIndex: 1, boxShadow: '0 32px 80px rgba(0,0,0,0.28)' }}>
-        <CardContent sx={{ p: '40px !important' }}>
-          {/* Logo */}
-          <Box sx={{ textAlign: 'center', mb: 3.5 }}>
-            <Box sx={{ width: 64, height: 64, background: '#1A2332', border: '2px solid #B8960C', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
-              <svg width="34" height="34" viewBox="0 0 28 28" fill="none">
-                <path d="M6 22V12l8-4.5 8 4.5V22" stroke="#B8960C" strokeWidth="2.2" fill="none" strokeLinejoin="round"/>
-                <rect x="11" y="16" width="6" height="6" fill="#B8960C"/>
-                <path d="M4 22h20" stroke="#B8960C" strokeWidth="2.2" strokeLinecap="round"/>
-              </svg>
-            </Box>
-            <Typography variant="h5" sx={{ fontWeight: 800 }}>TT Cell Portal</Typography>
-            <Typography variant="body2" sx={{ color: '#7A8B99', mt: 0.5 }}>509 Army Base Workshop — Secure Access</Typography>
+    <Box sx={{ minHeight: '100vh', background: '#F4F2EC', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', p: 2 }}>
+      <LinePattern />
+      
+      <Box sx={{ width: '100%', maxWidth: 440, position: 'relative', zIndex: 1 }}>
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Box sx={{ width: 48, height: 48, background: '#4B5D3A', border: '1px solid #7D7658', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+              <path d="M6 22V12l8-4.5 8 4.5V22" stroke="#FAF8F3" strokeWidth="2.2" fill="none" strokeLinejoin="round"/>
+              <rect x="11" y="16" width="6" height="6" fill="#FAF8F3"/>
+              <path d="M4 22h20" stroke="#FAF8F3" strokeWidth="2.2" strokeLinecap="round"/>
+            </svg>
           </Box>
+          <Typography variant="h3" sx={{ fontWeight: 700, color: '#222222', mb: 0.5, letterSpacing: '-0.5px' }}>TTC–VTP</Typography>
+          <Typography variant="body2" sx={{ color: '#444444', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>Vocational Training Portal</Typography>
+        </Box>
 
-          {/* Role Tabs */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 2 }}>
-            {[
-              { key: 'admin', label: '🛡️ Admin' },
-              { key: 'trainee', label: '🎓 Trainee' },
-            ].map(r => (
-              <Box key={r.key} onClick={() => handleRoleChange(r.key)} sx={{
-                p: '12px 8px', border: `1.5px solid ${role === r.key ? '#4A6331' : '#D0D9E5'}`,
-                borderRadius: '8px', textAlign: 'center', cursor: 'pointer',
-                background: role === r.key ? '#EEF2E8' : 'transparent',
-                color: role === r.key ? '#4A6331' : '#445566',
-                fontSize: '0.85rem', fontWeight: 700,
-                transition: 'all 0.14s',
-                '&:hover': { borderColor: '#8FA878', color: '#4A6331' },
-              }}>{r.label}</Box>
-            ))}
-          </Box>
-
-          <Box sx={{ background: '#EEF2E8', border: '1px solid rgba(74,99,49,0.2)', borderRadius: '8px', p: '6px 12px', mb: 2.5, textAlign: 'center' }}>
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#4A6331' }}>{roleLabels[role]}</Typography>
-          </Box>
-
-          {error && <Alert severity="error" sx={{ mb: 2, fontSize: '0.8rem' }}>{error}</Alert>}
-
-          <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
-            <FormField label="Email / Service ID" placeholder="e.g. admin@ttcell" value={username} onChange={e => setUsername(e.target.value)} />
-            <FormField label="Password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
-
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
-              <Typography sx={{ fontSize: '0.8rem', color: '#445566', display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                <input type="checkbox" defaultChecked /> Remember on this device
-              </Typography>
-              <Typography onClick={() => navigate('/forgot-password')} sx={{ fontSize: '0.8rem', color: '#4A6331', cursor: 'pointer', fontWeight: 700, '&:hover': { textDecoration: 'underline' } }}>
-                Forgot password?
-              </Typography>
+        <Card sx={{ background: '#FAF8F3', borderRadius: '8px', border: '1px solid #D6D0C4', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+          <CardContent sx={{ p: '32px !important' }}>
+            
+            <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
+              {[
+                { key: 'admin', label: 'Administrator' },
+                { key: 'trainee', label: 'Student / Trainee' },
+              ].map(r => (
+                <Box key={r.key} onClick={() => handleRoleChange(r.key)} sx={{
+                  flex: 1, p: '8px', border: `1px solid ${role === r.key ? '#4B5D3A' : '#D6D0C4'}`,
+                  borderRadius: '4px', textAlign: 'center', cursor: 'pointer',
+                  background: role === r.key ? '#EEF4EC' : '#F4F2EC',
+                  color: role === r.key ? '#1D401D' : '#444444',
+                  fontSize: '0.8125rem', fontWeight: 600,
+                  transition: 'all 0.15s',
+                  '&:hover': { borderColor: '#4B5D3A' },
+                }}>{r.label}</Box>
+              ))}
             </Box>
 
-            <Button type="submit" fullWidth variant="contained" size="large" disabled={loading} startIcon={<LockOutlinedIcon />} sx={{ mb: 2 }}>
-              {loading ? 'Signing In...' : 'Sign In Securely'}
-            </Button>
-          </form>
+            {error && <Alert severity="error" sx={{ mb: 3, fontSize: '0.875rem' }}>{error}</Alert>}
 
-          <Box sx={{ background: '#EBF0F5', borderRadius: '8px', p: 1.5, textAlign: 'center' }}>
-            <Typography sx={{ fontSize: '0.75rem', color: '#7A8B99', lineHeight: 1.6 }}>
-              🔒 This portal is restricted to authorised personnel only.<br />
-              Unauthorised access is a punishable offence under IT Act 2000.
-            </Typography>
-          </Box>
-        </CardContent>
-      </Card>
+            <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+              <FormField label="Service ID or Email" placeholder={role === 'admin' ? 'admin@ttcell.gov' : 'TN-2026-XXXX'} value={username} onChange={e => setUsername(e.target.value)} />
+              <FormField label="Password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, mt: 1 }}>
+                <Typography sx={{ fontSize: '0.8125rem', color: '#444444', display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <input type="checkbox" defaultChecked style={{ accentColor: '#4B5D3A' }} /> Remember session
+                </Typography>
+                <Typography onClick={() => navigate('/forgot-password')} sx={{ fontSize: '0.8125rem', color: '#4B5D3A', cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}>
+                  Recover access
+                </Typography>
+              </Box>
+
+              <Button type="submit" fullWidth variant="contained" size="large" disabled={loading} startIcon={<VerifiedUserIcon />} sx={{ mb: 3, py: 1.5 }}>
+                {loading ? 'Authenticating...' : 'Secure Login'}
+              </Button>
+            </form>
+
+            <Box sx={{ borderTop: '1px solid #D6D0C4', pt: 2, textAlign: 'center' }}>
+              <Typography sx={{ fontSize: '0.75rem', color: '#7D7658', lineHeight: 1.5, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                <LockOutlinedIcon sx={{ fontSize: 14 }} /> Restricted to Authorized Personnel
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+
+        <Box sx={{ textAlign: 'center', mt: 4 }}>
+          <Typography sx={{ fontSize: '0.7rem', color: '#888888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            © 2026 Bharat Electronics Limited • Training Division
+          </Typography>
+        </Box>
+      </Box>
     </Box>
   );
 }
 
+// ── Forgot Password & Reset Password omit structural changes for brevity 
+// but updated to use new color tokens matching the Login
 export function ForgotPasswordPage() {
   const navigate = useNavigate();
   const { forgotPassword } = useAuth();
@@ -156,49 +172,41 @@ export function ForgotPasswordPage() {
 
   const handleSubmit = async () => {
     if (!email) { setError('Please enter your email.'); return; }
-    setError('');
-    setLoading(true);
+    setError(''); setLoading(true);
     try {
-      await forgotPassword(email);
-      setSent(true);
+      await forgotPassword(email); setSent(true);
     } catch (err) {
       setError(err.response?.data?.message || 'Error sending password reset request.');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   return (
-    <Box sx={{ minHeight: 'calc(100vh - 58px)', background: '#1A2332', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Card sx={{ width: 420, boxShadow: '0 32px 80px rgba(0,0,0,0.28)' }}>
-        <CardContent sx={{ p: '40px !important' }}>
-          <Box sx={{ textAlign: 'center', mb: 3 }}>
-            <Typography sx={{ fontSize: 40, mb: 1.5 }}>🔑</Typography>
-            <Typography variant="h5" sx={{ fontWeight: 800 }}>Reset Password</Typography>
-            <Typography variant="body2" sx={{ color: '#7A8B99', mt: 0.5 }}>Enter your registered email to receive a reset link.</Typography>
-          </Box>
+    <Box sx={{ minHeight: '100vh', background: '#F4F2EC', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+      <LinePattern />
+      <Box sx={{ width: '100%', maxWidth: 440, position: 'relative', zIndex: 1 }}>
+        <Card sx={{ background: '#FAF8F3', borderRadius: '8px', border: '1px solid #D6D0C4', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+          <CardContent sx={{ p: '32px !important' }}>
+            <Box sx={{ textAlign: 'center', mb: 4 }}>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: '#222222', mb: 1 }}>Recover Access</Typography>
+              <Typography variant="body2" sx={{ color: '#444444' }}>Enter your official email to receive a reset link.</Typography>
+            </Box>
 
-          {error && <Alert severity="error" sx={{ mb: 2, fontSize: '0.8rem' }}>{error}</Alert>}
+            {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-          {sent ? (
-            <Alert severity="success" sx={{ mb: 2 }}>Reset request processed! If the email exists, the reset link has been printed in the backend log for development testing.</Alert>
-          ) : (
-            <>
-              <FormField label="Registered Email" placeholder="e.g. trainee@ttcell" value={email} onChange={e => setEmail(e.target.value)} />
-              <Typography variant="caption" sx={{ display: 'block', mb: 2.5 }}>The reset link will be generated and printed to the terminal console / log output.</Typography>
-              <Button fullWidth variant="contained" size="large" sx={{ mb: 1.5 }} disabled={loading} onClick={handleSubmit}>
-                {loading ? 'Sending...' : 'Send Reset Link'}
-              </Button>
-            </>
-          )}
-
-          <Button fullWidth variant="outlined" onClick={() => navigate('/login')}>← Back to Sign In</Button>
-
-          <Typography sx={{ fontSize: '0.75rem', color: '#7A8B99', textAlign: 'center', mt: 2, lineHeight: 1.6 }}>
-            If you don't receive the email within 10 minutes, contact the Training Office directly.
-          </Typography>
-        </CardContent>
-      </Card>
+            {sent ? (
+              <Alert severity="success" sx={{ mb: 3 }}>Reset request processed! If the email exists, the reset link has been dispatched.</Alert>
+            ) : (
+              <>
+                <FormField label="Official Email" placeholder="e.g. user@bel.co.in" value={email} onChange={e => setEmail(e.target.value)} />
+                <Button fullWidth variant="contained" size="large" sx={{ mb: 2, mt: 1 }} disabled={loading} onClick={handleSubmit}>
+                  {loading ? 'Dispatching...' : 'Dispatch Reset Link'}
+                </Button>
+              </>
+            )}
+            <Button fullWidth variant="outlined" onClick={() => navigate('/login')}>Return to Login</Button>
+          </CardContent>
+        </Card>
+      </Box>
     </Box>
   );
 }
@@ -208,7 +216,6 @@ export function ResetPasswordPage() {
   const { resetPassword } = useAuth();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
-
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -220,50 +227,46 @@ export function ResetPasswordPage() {
     if (!password) { setError('Please enter a password.'); return; }
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
-
-    setError('');
-    setLoading(true);
+    setError(''); setLoading(true);
     try {
-      await resetPassword(token, password);
-      setSuccess(true);
+      await resetPassword(token, password); setSuccess(true);
     } catch (err) {
       setError(err.response?.data?.message || 'Error resetting password. Token may have expired.');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   return (
-    <Box sx={{ minHeight: 'calc(100vh - 58px)', background: '#1A2332', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Card sx={{ width: 420, boxShadow: '0 32px 80px rgba(0,0,0,0.28)' }}>
-        <CardContent sx={{ p: '40px !important' }}>
-          <Box sx={{ textAlign: 'center', mb: 3 }}>
-            <Typography sx={{ fontSize: 40, mb: 1.5 }}>🛡️</Typography>
-            <Typography variant="h5" sx={{ fontWeight: 800 }}>Choose New Password</Typography>
-            <Typography variant="body2" sx={{ color: '#7A8B99', mt: 0.5 }}>Enter a new secure password for your account.</Typography>
-          </Box>
+    <Box sx={{ minHeight: '100vh', background: '#F4F2EC', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+      <LinePattern />
+      <Box sx={{ width: '100%', maxWidth: 440, position: 'relative', zIndex: 1 }}>
+        <Card sx={{ background: '#FAF8F3', borderRadius: '8px', border: '1px solid #D6D0C4', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+          <CardContent sx={{ p: '32px !important' }}>
+            <Box sx={{ textAlign: 'center', mb: 4 }}>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: '#222222', mb: 1 }}>New Credential</Typography>
+              <Typography variant="body2" sx={{ color: '#444444' }}>Establish a new secure password.</Typography>
+            </Box>
 
-          {error && <Alert severity="error" sx={{ mb: 2, fontSize: '0.8rem' }}>{error}</Alert>}
-          {!token && <Alert severity="warning" sx={{ mb: 2, fontSize: '0.8rem' }}>Missing reset token in URL parameters.</Alert>}
+            {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+            {!token && <Alert severity="warning" sx={{ mb: 3 }}>Missing authorization token.</Alert>}
 
-          {success ? (
-            <>
-              <Alert severity="success" sx={{ mb: 2.5 }}>Password reset successfully!</Alert>
-              <Button fullWidth variant="contained" size="large" onClick={() => navigate('/login')}>Sign In</Button>
-            </>
-          ) : (
-            <>
-              <FormField label="New Password" type="password" placeholder="•••••••• (min 8 chars)" value={password} onChange={e => setPassword(e.target.value)} />
-              <FormField label="Confirm New Password" type="password" placeholder="••••••••" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
-              <Button fullWidth variant="contained" size="large" sx={{ mb: 1.5 }} disabled={loading || !token} onClick={handleSubmit}>
-                {loading ? 'Resetting...' : 'Reset Password'}
-              </Button>
-              <Button fullWidth variant="outlined" onClick={() => navigate('/login')}>Cancel</Button>
-            </>
-          )}
-        </CardContent>
-      </Card>
+            {success ? (
+              <>
+                <Alert severity="success" sx={{ mb: 3 }}>Credential established successfully.</Alert>
+                <Button fullWidth variant="contained" size="large" onClick={() => navigate('/login')}>Proceed to Login</Button>
+              </>
+            ) : (
+              <>
+                <FormField label="New Password" type="password" placeholder="Min 8 chars" value={password} onChange={e => setPassword(e.target.value)} />
+                <FormField label="Confirm Password" type="password" placeholder="Match new password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+                <Button fullWidth variant="contained" size="large" sx={{ mb: 2, mt: 1 }} disabled={loading || !token} onClick={handleSubmit}>
+                  {loading ? 'Committing...' : 'Commit Credential'}
+                </Button>
+                <Button fullWidth variant="outlined" onClick={() => navigate('/login')}>Cancel Operation</Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </Box>
     </Box>
   );
 }
-

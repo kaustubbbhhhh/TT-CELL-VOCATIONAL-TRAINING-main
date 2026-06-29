@@ -4,7 +4,7 @@ from rest_framework import status
 from core.responses import success_response, error_response
 from core.permissions import IsAuthenticatedUser, IsAdminUser
 from core.exceptions import ValidationError, NotFoundError, Forbidden
-from apps.trainees.models import Trainee, DOMAINS
+from apps.trainees.models import Trainee, Batch, DOMAINS
 from apps.projects.models import Project, ProjectAssignment
 from apps.attendance.models import AttendanceRecord
 from apps.attendance.services import AttendanceService
@@ -15,10 +15,21 @@ class DashboardStatsView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
+        # Get active batch identifier
+        settings = PortalSettings.objects.first()
+        active_batch_id = settings.batch_identifier if settings else None
+
         # 0. Fetch data exactly once
-        all_trainees = list(Trainee.objects(is_active=True))
-        all_attendance = list(AttendanceRecord.objects())
-        all_projects = list(Project.objects(is_active=True, is_archived=False))
+        if active_batch_id:
+            all_trainees = list(Trainee.objects(is_active=True, batch_id=active_batch_id))
+            all_attendance = list(AttendanceRecord.objects(trainee_id__in=[t.id for t in all_trainees]))
+            assignments = ProjectAssignment.objects(trainee_id__in=[t.id for t in all_trainees])
+            assigned_project_ids = {a.project_id.id for a in assignments}
+            all_projects = list(Project.objects(is_active=True, is_archived=False, id__in=assigned_project_ids))
+        else:
+            all_trainees = list(Trainee.objects(is_active=True))
+            all_attendance = list(AttendanceRecord.objects())
+            all_projects = list(Project.objects(is_active=True, is_archived=False))
 
         # 1. Total active trainees
         total_trainees = len(all_trainees)
@@ -33,7 +44,8 @@ class DashboardStatsView(APIView):
 
         # 4. At-risk trainees
         attendance_dict = AttendanceService.get_bulk_attendance_percentages()
-        at_risk_count = sum(1 for t in all_trainees if str(t.id) in attendance_dict and attendance_dict[str(t.id)] < 75.0)
+        threshold = settings.min_attendance_threshold if settings else 75.0
+        at_risk_count = sum(1 for t in all_trainees if str(t.id) in attendance_dict and attendance_dict[str(t.id)] < threshold)
 
         # 5. Last 6 weeks attendance trends (percentages)
         today = datetime.datetime.utcnow().date()
@@ -91,7 +103,7 @@ class DashboardStatsView(APIView):
                 body = f"Targeted to {log.after_state.get('target_audience', 'All')}"
             
             # Simple time formatting
-            time_diff = datetime.datetime.utcnow() - log.timestamp
+            time_diff = datetime.datetime.now(datetime.UTC).replace(tzinfo=None) - log.timestamp
             if time_diff.days == 0:
                 if time_diff.seconds < 60:
                     time_str = "Just now"
@@ -222,9 +234,19 @@ class AnalyticsView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        # 0. Fetch all data exactly once to avoid multiple DB calls
-        all_projects = list(Project.objects(is_active=True))
-        all_trainees_ever = list(Trainee.objects())
+        # Get active batch identifier
+        settings = PortalSettings.objects.first()
+        active_batch_id = settings.batch_identifier if settings else None
+
+        if active_batch_id:
+            all_trainees_ever = list(Trainee.objects(batch_id=active_batch_id))
+            active_trainee_ids = [t.id for t in all_trainees_ever if t.is_active]
+            assignments = ProjectAssignment.objects(trainee_id__in=active_trainee_ids)
+            assigned_project_ids = {a.project_id.id for a in assignments}
+            all_projects = list(Project.objects(is_active=True, id__in=assigned_project_ids))
+        else:
+            all_projects = list(Project.objects(is_active=True))
+            all_trainees_ever = list(Trainee.objects())
 
         # 1. completion_rate
         active_unarchived = [p for p in all_projects if not p.is_archived]
@@ -255,30 +277,34 @@ class AnalyticsView(APIView):
             domain_scores.append({"name": d, "score": avg_score})
 
         # 6. attendance_distribution
-        buckets = {
-            "95-100%": {"count": 0, "color": "#4A6331"},
-            "85-95%": {"count": 0, "color": "#4A6331"},
-            "75-85%": {"count": 0, "color": "#B8960C"},
-            "Below 75%": {"count": 0, "color": "#C0392B"}
-        }
+        threshold = float(settings.min_attendance_threshold) if settings else 75.0
+        
+        b1_count = 0
+        b2_count = 0
+        b3_count = 0
+        b4_count = 0
+        
         attendance_dict = AttendanceService.get_bulk_attendance_percentages()
         for t in active_trainees:
             att_pct = attendance_dict.get(str(t.id), 100.0)
             if att_pct >= 95.0:
-                buckets["95-100%"]["count"] += 1
+                b1_count += 1
             elif att_pct >= 85.0:
-                buckets["85-95%"]["count"] += 1
-            elif att_pct >= 75.0:
-                buckets["75-85%"]["count"] += 1
+                b2_count += 1
+            elif att_pct >= threshold:
+                b3_count += 1
             else:
-                buckets["Below 75%"]["count"] += 1
-
+                b4_count += 1
+                
         attendance_distribution = [
-            {"label": "95-100%", "count": buckets["95-100%"]["count"], "color": buckets["95-100%"]["color"]},
-            {"label": "85-95%", "count": buckets["85-95%"]["count"], "color": buckets["85-95%"]["color"]},
-            {"label": "75-85%", "count": buckets["75-85%"]["count"], "color": buckets["75-85%"]["color"]},
-            {"label": "Below 75%", "count": buckets["Below 75%"]["count"], "color": buckets["Below 75%"]["color"]}
+            {"label": "95-100%", "count": b1_count, "color": "#4A6331"},
+            {"label": "85-95%", "count": b2_count, "color": "#4A6331"}
         ]
+        
+        if threshold < 85.0:
+            attendance_distribution.append({"label": f"{int(threshold)}-85%", "count": b3_count, "color": "#B8960C"})
+        
+        attendance_distribution.append({"label": f"Below {int(threshold)}%", "count": b4_count, "color": "#C0392B"})
 
         # 7. project_status_breakdown
         status_colors = {
@@ -409,9 +435,13 @@ class SettingsView(APIView):
         if not settings:
             settings = PortalSettings().save()
 
+        batch = Batch.objects(batch_id=settings.batch_identifier).first() if settings.batch_identifier else None
+        active_batch_status = batch.batch_status if batch else 'active'
+
         data = {
             "org_name": settings.org_name,
             "batch_identifier": settings.batch_identifier,
+            "active_batch_status": active_batch_status,
             "min_attendance_threshold": settings.min_attendance_threshold,
             "academic_year": settings.academic_year,
             "email_at_risk_alerts": settings.email_at_risk_alerts,
@@ -468,22 +498,39 @@ class ReportsView(APIView):
         if not report_type:
             raise ValidationError("report_type is required.")
 
+        settings = PortalSettings.objects.first()
+        active_batch_id = settings.batch_identifier if settings else None
+
         response = HttpResponse(content_type='text/csv')
         filename = f"{report_type.lower().replace(' ', '_')}.csv"
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
         writer = csv.writer(response)
 
+        # Base filters
+        trainee_filter = {"is_active": True}
+        if active_batch_id:
+            trainee_filter["batch_id"] = active_batch_id
+
         if report_type == 'Attendance Report':
             writer.writerow(['Roll Number', 'Full Name', 'Domain', 'Batch', 'Attendance Percentage'])
             attendance_dict = AttendanceService.get_bulk_attendance_percentages()
-            for t in Trainee.objects(is_active=True):
+            for t in Trainee.objects(**trainee_filter):
                 att_pct = attendance_dict.get(str(t.id), 100.0)
-                writer.writerow([t.roll_number, t.full_name, t.domain, t.batch, f"{att_pct}%"])
+                batch_str = t.batch_id.batch_id if t.batch_id else "N/A"
+                writer.writerow([t.roll_number, t.full_name, t.domain, batch_str, f"{att_pct}%"])
 
         elif report_type == 'Project Progress Report':
             writer.writerow(['Project Code', 'Title', 'Domain', 'Status', 'Progress', 'Score', 'Tech Stack'])
-            for p in Project.objects(is_active=True):
+            if active_batch_id:
+                # Only show projects assigned to trainees in active batch
+                trainee_ids = [t.id for t in Trainee.objects(**trainee_filter)]
+                assignments = ProjectAssignment.objects(trainee_id__in=trainee_ids)
+                assigned_project_ids = {a.project_id.id for a in assignments}
+                project_queryset = Project.objects(is_active=True, id__in=assigned_project_ids)
+            else:
+                project_queryset = Project.objects(is_active=True)
+            for p in project_queryset:
                 stack_str = ", ".join(p.stack) if p.stack else ""
                 writer.writerow([p.project_code, p.title, p.domain, p.status, f"{p.progress}%", p.score if p.score is not None else '—', stack_str])
 
@@ -501,7 +548,7 @@ class ReportsView(APIView):
                 if pid in active_projects_map:
                     trainee_assignments[tid].append(active_projects_map[pid])
 
-            for t in Trainee.objects(is_active=True):
+            for t in Trainee.objects(**trainee_filter):
                 att_pct = attendance_dict.get(str(t.id), 100.0)
                 t_projs = trainee_assignments.get(str(t.id), [])
                 total_assigned = len(t_projs)
@@ -514,7 +561,8 @@ class ReportsView(APIView):
                         scores.append(proj.score)
                 avg_score = sum(scores) / len(scores) if scores else 85.0
                 composite = (att_pct * 0.4) + (avg_score * 0.6)
-                writer.writerow([t.roll_number, t.full_name, t.domain, t.batch, f"{round(att_pct, 1)}%", f"{completed_count}/{total_assigned}", round(composite, 1)])
+                batch_str = t.batch_id.batch_id if t.batch_id else "N/A"
+                writer.writerow([t.roll_number, t.full_name, t.domain, batch_str, f"{round(att_pct, 1)}%", f"{completed_count}/{total_assigned}", round(composite, 1)])
 
         elif report_type == 'At-Risk Trainee Report':
             writer.writerow(['Roll Number', 'Full Name', 'Domain', 'Batch', 'Attendance Percentage', 'Reason'])
@@ -528,14 +576,14 @@ class ReportsView(APIView):
                 tid = str(a._data['trainee_id']) if hasattr(a, '_data') else str(a.trainee_id.id)
                 pid = str(a._data['project_id']) if hasattr(a, '_data') else str(a.project_id.id)
                 if pid in active_projects_map:
-                    # also store the deadline_override so we can check it
                     deadline = a._data.get('deadline_override') if hasattr(a, '_data') else a.deadline_override
                     trainee_assignments[tid].append({'proj': active_projects_map[pid], 'deadline': deadline})
 
-            for t in Trainee.objects(is_active=True):
+            for t in Trainee.objects(**trainee_filter):
                 att_pct = attendance_dict.get(str(t.id), 100.0)
                 reasons = []
-                if att_pct < 75.0:
+                threshold = settings.min_attendance_threshold if settings else 75.0
+                if att_pct < threshold:
                     reasons.append(f"Low Attendance ({round(att_pct, 1)}%)")
                 
                 t_projs = trainee_assignments.get(str(t.id), [])
@@ -543,10 +591,11 @@ class ReportsView(APIView):
                     proj = item['proj']
                     deadline = item['deadline']
                     if proj.status != 'completed':
-                        if deadline and deadline < datetime.datetime.utcnow():
+                        if deadline and deadline < datetime.datetime.now(datetime.UTC).replace(tzinfo=None):
                             reasons.append(f"Overdue Project: {proj.title}")
                 if reasons:
-                    writer.writerow([t.roll_number, t.full_name, t.domain, t.batch, f"{round(att_pct, 1)}%", " | ".join(reasons)])
+                    batch_str = t.batch_id.batch_id if t.batch_id else "N/A"
+                    writer.writerow([t.roll_number, t.full_name, t.domain, batch_str, f"{round(att_pct, 1)}%", " | ".join(reasons)])
 
         elif report_type == 'Placement Analytics Report':
             writer.writerow(['Domain', 'Registered Trainees', 'Placed Count', 'Average Package (LPA)', 'Top Recruiters'])
@@ -557,18 +606,32 @@ class ReportsView(APIView):
 
         elif report_type == 'MoD Compliance Report':
             writer.writerow(['TT-CELL VOCATIONAL PORTAL - MINISTRY OF DEFENCE COMPLIANCE REPORT'])
-            writer.writerow(['Quarterly Report', 'Q1 - 2026', 'Generated On', datetime.datetime.utcnow().strftime("%Y-%m-%d")])
+            writer.writerow(['Quarterly Report', 'Q1 - 2026', 'Generated On', datetime.datetime.now(datetime.UTC).replace(tzinfo=None).strftime("%Y-%m-%d")])
             writer.writerow([])
             writer.writerow(['Metric', 'Target Value', 'Actual Value', 'Status'])
-            active_trainees = Trainee.objects(is_active=True).count()
+            
+            active_trainees = Trainee.objects(**trainee_filter).count()
             writer.writerow(['Trainee Intake', '150', str(active_trainees), 'Satisfactory' if active_trainees >= 100 else 'Under Enrolled'])
             
-            total_records = AttendanceRecord.objects.count()
-            present_records = AttendanceRecord.objects(status='present').count()
+            if active_batch_id:
+                active_trainee_ids = [str(t.id) for t in Trainee.objects(**trainee_filter)]
+                total_records = AttendanceRecord.objects(trainee_id__in=active_trainee_ids).count()
+                present_records = AttendanceRecord.objects(trainee_id__in=active_trainee_ids, status='present').count()
+            else:
+                total_records = AttendanceRecord.objects.count()
+                present_records = AttendanceRecord.objects(status='present').count()
+                
             avg_att = (present_records / total_records) * 100 if total_records > 0 else 85.0
-            writer.writerow(['Cohort Attendance', '75.0%', f"{round(avg_att, 1)}%", 'Compliant' if avg_att >= 75.0 else 'Non-Compliant'])
+            threshold = settings.min_attendance_threshold if settings else 75.0
+            writer.writerow(['Cohort Attendance', f'{round(threshold, 1)}%', f"{round(avg_att, 1)}%", 'Compliant' if avg_att >= threshold else 'Non-Compliant'])
             
-            comp_projects = Project.objects(is_active=True, status='completed').count()
+            if active_batch_id:
+                trainee_ids = [t.id for t in Trainee.objects(**trainee_filter)]
+                assignments = ProjectAssignment.objects(trainee_id__in=trainee_ids)
+                assigned_project_ids = {a.project_id.id for a in assignments}
+                comp_projects = Project.objects(is_active=True, status='completed', id__in=assigned_project_ids).count()
+            else:
+                comp_projects = Project.objects(is_active=True, status='completed').count()
             writer.writerow(['Capstone Projects Completed', '50', str(comp_projects), 'In Progress'])
         else:
             return error_response(message=f"Unsupported report type: {report_type}")

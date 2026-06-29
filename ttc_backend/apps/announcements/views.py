@@ -25,7 +25,7 @@ class AnnouncementListCreateView(APIView):
                 try:
                     trainee = Trainee.objects.get(pk=request.user.trainee_id)
                     trainee_domain = trainee.domain
-                except:
+                except Exception:
                     pass
             
             # Match audience: 'All Batches', or specific domain name, or matching sub-string
@@ -84,7 +84,7 @@ class AnnouncementDetailView(APIView):
     def get_object(self, pk):
         try:
             return Announcement.objects.get(id=pk, is_active=True)
-        except:
+        except Exception:
             raise NotFoundError("Announcement not found.")
 
     def get(self, request, pk):

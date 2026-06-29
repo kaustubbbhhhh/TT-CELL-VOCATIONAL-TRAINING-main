@@ -42,10 +42,12 @@ def test_view_other_attendance_denied(auth_headers_trainee, trainee_doc):
     # Seed another trainee
     other_trainee = pytest.importorskip("apps.trainees.models").Trainee(
         roll_number="TT24-002",
-        full_name="Priya Sharma",
+        first_name="Priya",
+        last_name="Sharma",
         email="priya.s@ttcell",
         domain="Cyber Sec",
-        batch="Batch 2024-B"
+        batch_id=trainee_doc.batch_id,
+        section="A"
     ).save()
     
     # Trainee tries to view other's history

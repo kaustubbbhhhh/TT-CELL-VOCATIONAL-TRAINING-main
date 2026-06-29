@@ -8,14 +8,13 @@ export const AuthProvider = ({ children }) => {
     try {
       const storedToken = localStorage.getItem('access_token');
       const storedUser = localStorage.getItem('user');
-      if (storedToken && storedUser) {
+      if (storedUser) {
         return JSON.parse(storedUser);
       }
-      localStorage.removeItem('access_token');
       localStorage.removeItem('user');
       return null;
     } catch (e) {
-      localStorage.removeItem('access_token');
+      localStorage.removeItem('user');
       localStorage.removeItem('user');
       return null;
     }
@@ -47,7 +46,10 @@ export const AuthProvider = ({ children }) => {
           : `Trainee · ${backendUser.email}`,
       };
 
-      localStorage.setItem('access_token', access_token);
+      // Store the access token in memory (axios defaults) to prevent XSS
+      import('../api/axiosInstance').then(module => {
+        module.default.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+      });
       localStorage.setItem('user', JSON.stringify(mappedUser));
       
       setUser(mappedUser);
@@ -66,7 +68,6 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout error on backend:', error);
     } finally {
-      localStorage.removeItem('access_token');
       localStorage.removeItem('user');
       setUser(null);
     }

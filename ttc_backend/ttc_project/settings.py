@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-ttcell-vocational-training-secret-key')
 
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
 # Securely load allowed hosts, fallback to localhost for dev
 allowed_hosts_env = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,testserver')
@@ -72,6 +72,7 @@ CORS_ALLOW_METHODS = (
     'GET',
     'POST',
     'PUT',
+    'PATCH',
     'DELETE',
     'OPTIONS',
 )

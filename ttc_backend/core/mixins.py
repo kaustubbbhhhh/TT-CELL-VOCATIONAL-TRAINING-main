@@ -15,5 +15,5 @@ class AuditLogMixin(object):
     updated_at = DateTimeField(default=datetime.datetime.utcnow)
 
     def save(self, *args, **kwargs):
-        self.updated_at = datetime.datetime.utcnow()
+        self.updated_at = datetime.datetime.now(datetime.UTC)
         return super().save(*args, **kwargs)

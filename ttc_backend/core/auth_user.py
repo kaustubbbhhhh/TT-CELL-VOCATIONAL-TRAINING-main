@@ -1,10 +1,11 @@
 class AuthUser:
     """A lightweight mock user class that mimics Django's AbstractUser for DRF integration."""
-    def __init__(self, user_id, email, role, is_active=True):
+    def __init__(self, user_id, email, role, is_active=True, trainee_id=None):
         self.id = user_id
         self.email = email
         self.role = role
         self.is_active = is_active
+        self.trainee_id = trainee_id
 
     @property
     def is_authenticated(self):

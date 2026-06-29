@@ -1,9 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework import status
 from django.conf import settings
-from rest_framework.response import Response
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
 from core.responses import success_response, error_response
 from core.permissions import IsAuthenticatedUser, IsAdminUser
 from apps.authentication.services import AuthService
@@ -101,7 +98,11 @@ class LogoutView(APIView):
             refresh_token = request.data.get('refresh_token')
 
         if refresh_token:
-            AuthService.logout(refresh_token)
+            auth_header = request.headers.get('Authorization')
+            access_token = None
+            if auth_header and auth_header.startswith('Bearer '):
+                access_token = auth_header.split(' ')[1]
+            AuthService.logout(refresh_token, access_token)
 
         response = success_response(message="Logged out successfully.")
         response.delete_cookie('refresh_token')
@@ -115,10 +116,16 @@ class ChangePasswordView(APIView):
         serializer = ChangePasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        auth_header = request.headers.get('Authorization')
+        access_token = None
+        if auth_header and auth_header.startswith('Bearer '):
+            access_token = auth_header.split(' ')[1]
+
         AuthService.change_password(
             user_id=request.user.id,
             old_password=serializer.validated_data['old_password'],
-            new_password=serializer.validated_data['new_password']
+            new_password=serializer.validated_data['new_password'],
+            access_token_str=access_token
         )
 
         response = success_response(message="Password updated successfully.")
@@ -134,10 +141,16 @@ class AdminResetPasswordView(APIView):
         serializer = ResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        auth_header = request.headers.get('Authorization')
+        access_token = None
+        if auth_header and auth_header.startswith('Bearer '):
+            access_token = auth_header.split(' ')[1]
+
         AuthService.admin_reset_password(
             admin_id=request.user.id,
             target_user_id=target_user_id,
-            new_password=serializer.validated_data['new_password']
+            new_password=serializer.validated_data['new_password'],
+            admin_access_token_str=access_token
         )
 
         return success_response(message="Trainee password reset successfully.")

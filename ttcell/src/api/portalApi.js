@@ -198,3 +198,22 @@ export const reportsApi = {
   },
 };
 
+export const batchesApi = {
+  list: async (params = {}) => {
+    const response = await axiosInstance.get('/batches/', { params });
+    return response.data;
+  },
+  create: async (data) => {
+    const response = await axiosInstance.post('/batches/', data);
+    return response.data;
+  },
+  update: async (id, data) => {
+    const response = await axiosInstance.patch(`/batches/${id}/`, data);
+    return response.data;
+  },
+  delete: async (id) => {
+    const response = await axiosInstance.delete(`/batches/${id}/`);
+    return response.data;
+  },
+};
+

@@ -46,13 +46,15 @@ export function TraineeDashboard() {
     }
     if (user?.trainee_id) {
       loadDashboard();
+    } else {
+      setLoading(false);
     }
   }, [user]);
 
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-        <CircularProgress sx={{ color: '#4A6331' }} />
+        <CircularProgress sx={{ color: '#4B5D3A' }} />
       </Box>
     );
   }
@@ -88,7 +90,7 @@ export function TraineeDashboard() {
             value={`${my_attendance}%`} 
             delta={my_attendance >= 75 ? "Well above threshold" : "Below 75% limit"} 
             deltaUp={my_attendance >= 75} 
-            accentColor="#4A6331" 
+            accentColor="#4B5D3A" 
           />
         </Grid>
         <Grid item xs={6} md={3}>
@@ -113,7 +115,7 @@ export function TraineeDashboard() {
             label="Weeks Remaining" 
             value={String(weeks_remaining)} 
             sub="Graduation: August 2025" 
-            accentColor="#4A6331" 
+            accentColor="#4B5D3A" 
           />
         </Grid>
       </Grid>
@@ -143,12 +145,12 @@ export function TraineeDashboard() {
                   <Box sx={{ mb: 0.75 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                       <Typography variant="caption">Overall Progress</Typography>
-                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#4A6331' }}>{current_project.progress}%</Typography>
+                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#4B5D3A' }}>{current_project.progress}%</Typography>
                     </Box>
                     <LinearProgress 
                       variant="determinate" 
                       value={current_project.progress}
-                      sx={{ height: 8, borderRadius: 10, background: '#EBF0F5', '& .MuiLinearProgress-bar': { background: '#4A6331', borderRadius: 10 } }}
+                      sx={{ height: 8, borderRadius: 10, background: '#EBF0F5', '& .MuiLinearProgress-bar': { background: '#4B5D3A', borderRadius: 10 } }}
                     />
                   </Box>
 
@@ -203,7 +205,7 @@ export function TraineeDashboard() {
               <Typography variant="h6" sx={{ mb: 2 }}>My Attendance — This Month</Typography>
               <BarChart data={barChartData} height={80} />
               <Typography variant="caption" sx={{ mt: 1.5, display: 'block' }}>
-                Overall standing: <strong style={{ color: '#4A6331' }}>{my_attendance}%</strong>
+                Overall standing: <strong style={{ color: '#4B5D3A' }}>{my_attendance}%</strong>
               </Typography>
             </CardContent>
           </Card>
@@ -217,14 +219,14 @@ export function TraineeDashboard() {
                   <Box key={i} sx={{ mb: 1.5, '&:last-child': { mb: 0 } }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                       <Typography sx={{ fontSize: '0.8rem', fontWeight: 600 }}>{p.title}</Typography>
-                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: p.score ? '#4A6331' : '#7A8B99' }}>
+                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: p.score ? '#4B5D3A' : '#7A8B99' }}>
                         {p.score ? `${p.score}/100` : '—/100'}
                       </Typography>
                     </Box>
                     <LinearProgress 
                       variant="determinate" 
                       value={p.score ?? p.progress}
-                      sx={{ height: 6, borderRadius: 10, background: '#EBF0F5', '& .MuiLinearProgress-bar': { background: p.score ? '#4A6331' : '#B8960C', borderRadius: 10 } }}
+                      sx={{ height: 6, borderRadius: 10, background: '#EBF0F5', '& .MuiLinearProgress-bar': { background: p.score ? '#4B5D3A' : '#B8960C', borderRadius: 10 } }}
                     />
                   </Box>
                 ))
@@ -288,12 +290,14 @@ export function TraineeProfile() {
     }
     if (user?.trainee_id) {
       loadStats();
+    } else {
+      setLoading(false);
     }
   }, [user]);
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress sx={{ color: '#4A6331' }} /></Box>
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress sx={{ color: '#4B5D3A' }} /></Box>
     );
   }
 
@@ -306,12 +310,12 @@ export function TraineeProfile() {
         <Grid item xs={12} md="auto">
           <Card sx={{ textAlign: 'center', p: 2, minWidth: 160 }}>
             <CardContent>
-              <Box sx={{ width: 72, height: 72, borderRadius: '50%', background: '#EEF2E8', color: '#4A6331', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800, margin: '0 auto 12px' }}>
+              <Box sx={{ width: 72, height: 72, borderRadius: '50%', background: '#EEF2E8', color: '#4B5D3A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800, margin: '0 auto 12px' }}>
                 {initials}
               </Box>
               <Typography sx={{ fontWeight: 800, fontSize: '0.9375rem' }}>{stats?.name || user?.name}</Typography>
               <Typography variant="caption" sx={{ display: 'block', mb: 1 }}>{stats?.roll_number}</Typography>
-              <Chip label={`${stats?.domain || 'Vocational'} Domain`} size="small" sx={{ background: '#EEF2E8', color: '#4A6331', fontWeight: 700, fontSize: '0.7rem' }} />
+              <Chip label={`${stats?.domain || 'Vocational'} Domain`} size="small" sx={{ background: '#EEF2E8', color: '#4B5D3A', fontWeight: 700, fontSize: '0.7rem' }} />
             </CardContent>
           </Card>
         </Grid>
@@ -337,13 +341,13 @@ export function TraineeProfile() {
               <InfoRow label="Batch" value={stats?.batch || ''} />
               <InfoRow label="Attendance Standing" value={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography sx={{ fontWeight: 800, color: '#4A6331', fontSize: '1rem' }}>{stats?.my_attendance}%</Typography>
+                  <Typography sx={{ fontWeight: 800, color: '#4B5D3A', fontSize: '1rem' }}>{stats?.my_attendance}%</Typography>
                   <Typography variant="caption">· {stats?.my_attendance >= 75 ? 'Well above minimum threshold' : 'Below 75% limit'}</Typography>
                 </Box>
               } />
               <InfoRow label="Composite Score" value={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography sx={{ fontWeight: 800, color: '#4A6331', fontSize: '1rem' }}>{stats?.composite_score} / 100</Typography>
+                  <Typography sx={{ fontWeight: 800, color: '#4B5D3A', fontSize: '1rem' }}>{stats?.composite_score} / 100</Typography>
                 </Box>
               } />
             </CardContent>
@@ -412,12 +416,14 @@ export function TraineeAttendance() {
     }
     if (user?.trainee_id) {
       loadAttendance();
+    } else {
+      setLoading(false);
     }
   }, [user]);
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress sx={{ color: '#4A6331' }} /></Box>
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress sx={{ color: '#4B5D3A' }} /></Box>
     );
   }
 
@@ -431,13 +437,13 @@ export function TraineeAttendance() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
         <Box>
           <Typography variant="h5" sx={{ fontWeight: 800 }}>My Attendance</Typography>
-          <Typography variant="body2" sx={{ color: '#7A8B99', mt: 0.25 }}>Complete record · Batch 2024-B</Typography>
+          <Typography variant="body2" sx={{ color: '#7A8B99', mt: 0.25 }}>Complete record · {stats?.batch || 'Batch 2024-B'}</Typography>
         </Box>
       </Box>
 
       <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
         <Grid item xs={6} md={3}>
-          <MetricCard label="Overall Attendance" value={`${overall}%`} sub={overall >= 75 ? "Above 75% threshold ✓" : "Defaulter list ⚠️"} accentColor="#4A6331" />
+          <MetricCard label="Overall Attendance" value={`${overall}%`} sub={overall >= 75 ? "Above 75% threshold ✓" : "Defaulter list ⚠️"} accentColor="#4B5D3A" />
         </Grid>
         <Grid item xs={6} md={3}>
           <MetricCard label="Days Present" value={String(presentCount)} sub={`of ${records.length} registered days`} accentColor="#3D5A80" />
@@ -454,12 +460,12 @@ export function TraineeAttendance() {
         <CardContent>
           <Typography variant="h6" sx={{ mb: 0.5 }}>Attendance Standing</Typography>
           <Typography variant="body2" sx={{ color: '#445566', mb: 1.5 }}>
-            Your attendance is <strong>{overall >= 75 ? 'safe' : 'low'}</strong>. Current standing: <strong style={{ color: '#4A6331' }}>{overall}%</strong>.
+            Your attendance is <strong>{overall >= 75 ? 'safe' : 'low'}</strong>. Current standing: <strong style={{ color: '#4B5D3A' }}>{overall}%</strong>.
           </Typography>
           <LinearProgress 
             variant="determinate" 
             value={overall}
-            sx={{ height: 10, borderRadius: 10, background: '#EBF0F5', mb: 0.75, '& .MuiLinearProgress-bar': { background: '#4A6331', borderRadius: 10 } }}
+            sx={{ height: 10, borderRadius: 10, background: '#EBF0F5', mb: 0.75, '& .MuiLinearProgress-bar': { background: '#4B5D3A', borderRadius: 10 } }}
           />
         </CardContent>
       </Card>
@@ -522,7 +528,7 @@ export function TraineeAttendance() {
 }
 
 // ── TRAINEE PROJECTS ──────────────────────────────────────────
-const projStatusColor = { in_progress: '#B8960C', completed: '#4A6331', planning: '#3D5A80' };
+const projStatusColor = { in_progress: '#B8960C', completed: '#4B5D3A', planning: '#3D5A80' };
 const projStatusLabel = { in_progress: 'In Progress', completed: 'Completed', planning: 'Planning' };
 
 export function TraineeProjects() {
@@ -543,12 +549,14 @@ export function TraineeProjects() {
     }
     if (user?.trainee_id) {
       loadStats();
+    } else {
+      setLoading(false);
     }
   }, [user]);
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress sx={{ color: '#4A6331' }} /></Box>
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress sx={{ color: '#4B5D3A' }} /></Box>
     );
   }
 
@@ -580,7 +588,7 @@ export function TraineeProjects() {
                         sx={{ background: `${projStatusColor[statusVal]}22`, color: projStatusColor[statusVal], fontWeight: 700, fontSize: '0.7rem' }}
                       />
                       {p.score && (
-                        <Chip label={`Score: ${p.score}/100`} size="small" sx={{ background: '#EEF2E8', color: '#4A6331', fontWeight: 700, fontSize: '0.7rem' }} />
+                        <Chip label={`Score: ${p.score}/100`} size="small" sx={{ background: '#EEF2E8', color: '#4B5D3A', fontWeight: 700, fontSize: '0.7rem' }} />
                       )}
                     </Box>
                   </Box>
@@ -629,7 +637,7 @@ export function TraineeAnnouncements() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress sx={{ color: '#4A6331' }} /></Box>
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress sx={{ color: '#4B5D3A' }} /></Box>
     );
   }
 
@@ -639,7 +647,7 @@ export function TraineeAnnouncements() {
       <Box sx={{ display: 'grid', gap: 2 }}>
         {announcements.length > 0 ? (
           announcements.map(a => (
-            <Card key={a.id} sx={{ borderLeft: `3px solid ${a.priority === 'urgent' ? '#C0392B' : a.priority === 'notice' ? '#3D5A80' : '#4A6331'}` }}>
+            <Card key={a.id} sx={{ borderLeft: `3px solid ${a.priority === 'urgent' ? '#C0392B' : a.priority === 'notice' ? '#3D5A80' : '#4B5D3A'}` }}>
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.75, flexWrap: 'wrap', gap: 1 }}>
                   <Box>
@@ -653,7 +661,7 @@ export function TraineeAnnouncements() {
                     size="small"
                     sx={{
                       background: a.priority === 'urgent' ? '#FCECEA' : a.priority === 'notice' ? '#EBF2F9' : '#EEF2E8',
-                      color: a.priority === 'urgent' ? '#C0392B' : a.priority === 'notice' ? '#3D5A80' : '#4A6331',
+                      color: a.priority === 'urgent' ? '#C0392B' : a.priority === 'notice' ? '#3D5A80' : '#4B5D3A',
                       fontWeight: 700, fontSize: '0.7rem',
                     }}
                   />
@@ -669,3 +677,4 @@ export function TraineeAnnouncements() {
     </Box>
   );
 }
+
