@@ -509,6 +509,7 @@ export function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
   const [showArchived, setShowArchived] = useState(false);
+  const [activeBatchId, setActiveBatchId] = useState('');
 
   // Assignment Modal
   const [isAssignOpen, setIsAssignOpen] = useState(false);
@@ -545,7 +546,19 @@ export function ProjectsPage() {
     }
   };
 
+  const fetchActiveBatch = async () => {
+    try {
+      const res = await settingsApi.get();
+      if (res && res.data) {
+        setActiveBatchId(res.data.batch_identifier || '');
+      }
+    } catch (err) {
+      console.error('Failed to load active batch settings:', err);
+    }
+  };
+
   useEffect(() => {
+    fetchActiveBatch();
     fetchProjects();
   }, [showArchived]);
 
@@ -634,7 +647,7 @@ export function ProjectsPage() {
       <Breadcrumb items={[{ label: 'Dashboard', onClick: () => navigate('/admin') }, { label: 'Projects' }]} />
       <PageHeader
         title="Project Management"
-        subtitle={`${projects.length} capstone projects registered across domains`}
+        subtitle={`${projects.length} capstone projects active in Batch ${activeBatchId || '...'}`}
         actions={
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <FormControlLabel

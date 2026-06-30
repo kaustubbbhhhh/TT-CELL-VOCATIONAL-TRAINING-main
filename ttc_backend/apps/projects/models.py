@@ -1,6 +1,6 @@
 from mongoengine import Document, StringField, IntField, BooleanField, ListField, ReferenceField, DateTimeField, CASCADE
 from core.mixins import AuditLogMixin, SoftDeleteMixin
-from apps.trainees.models import Trainee, DOMAINS
+from apps.trainees.models import Trainee, DOMAINS, Batch
 
 PROJECT_STATUSES = ['planning', 'in_progress', 'submitted', 'completed']
 
@@ -17,6 +17,7 @@ class Project(AuditLogMixin, SoftDeleteMixin, Document):
     stack = ListField(StringField())
     created_by = StringField(required=True)  # User.id of admin creator
     is_archived = BooleanField(default=False)
+    batch_id = ReferenceField(Batch, reverse_delete_rule=CASCADE, required=True)
 
     meta = {
         'collection': 'projects',

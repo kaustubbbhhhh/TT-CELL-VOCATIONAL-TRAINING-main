@@ -1,6 +1,6 @@
 from apps.projects.models import Project, ProjectAssignment
-from apps.trainees.models import Trainee
-from apps.authentication.models import AuditLog
+from apps.trainees.models import Trainee, Batch
+from apps.authentication.models import AuditLog, PortalSettings
 from core.exceptions import ValidationError, ConflictError, NotFoundError
 
 class ProjectService:
@@ -15,6 +15,20 @@ class ProjectService:
         if Project.objects(project_code=project_code, is_active=True).first():
             raise ConflictError("Project code already exists.")
 
+        # Determine Batch
+        batch_id = data.get('batch_id')
+        if not batch_id:
+            settings = PortalSettings.objects.first()
+            if settings and settings.batch_identifier:
+                batch_id = settings.batch_identifier
+            else:
+                batch_id = 'B_01'
+        
+        try:
+            batch_obj = Batch.objects.get(batch_id=batch_id)
+        except Batch.DoesNotExist:
+            raise ValidationError(f"Batch {batch_id} does not exist.")
+
         project = Project(
             project_code=project_code,
             title=data.get('title'),
@@ -25,7 +39,8 @@ class ProjectService:
             status=data.get('status', 'planning'),
             score=data.get('score'),
             stack=data.get('stack', []),
-            created_by=actor_id
+            created_by=actor_id,
+            batch_id=batch_obj
         )
         project.save()
 

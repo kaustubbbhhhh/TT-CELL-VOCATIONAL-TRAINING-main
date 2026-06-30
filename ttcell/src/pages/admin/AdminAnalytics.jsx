@@ -476,6 +476,22 @@ export function SettingsPage() {
     }
   };
 
+  const handleBatchIdentifierChange = (e) => {
+    const selectedBatchId = e.target.value;
+    const batch = batches.find(b => b.batch_id === selectedBatchId);
+    let newAcademicYear = settings.academic_year;
+    
+    if (batch && batch.batch_year) {
+      newAcademicYear = `${batch.batch_year}-${batch.batch_year + 1}`;
+    }
+    
+    setSettings({ 
+      ...settings, 
+      batch_identifier: selectedBatchId,
+      academic_year: newAcademicYear
+    });
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
@@ -511,7 +527,7 @@ export function SettingsPage() {
                     size="small"
                     fullWidth
                     value={settings.batch_identifier || ''}
-                    onChange={e => setSettings({ ...settings, batch_identifier: e.target.value })}
+                    onChange={handleBatchIdentifierChange}
                   >
                     {batches.map(b => (
                       <MenuItem key={b.batch_id} value={b.batch_id}>

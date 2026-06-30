@@ -21,11 +21,14 @@ class DashboardStatsView(APIView):
 
         # 0. Fetch data exactly once
         if active_batch_id:
-            all_trainees = list(Trainee.objects(is_active=True, batch_id=active_batch_id))
+            try:
+                batch_obj = Batch.objects.get(batch_id=active_batch_id)
+                all_trainees = list(Trainee.objects(is_active=True, batch_id=batch_obj))
+                all_projects = list(Project.objects(is_active=True, is_archived=False, batch_id=batch_obj))
+            except Batch.DoesNotExist:
+                all_trainees = []
+                all_projects = []
             all_attendance = list(AttendanceRecord.objects(trainee_id__in=[t.id for t in all_trainees]))
-            assignments = ProjectAssignment.objects(trainee_id__in=[t.id for t in all_trainees])
-            assigned_project_ids = {a.project_id.id for a in assignments}
-            all_projects = list(Project.objects(is_active=True, is_archived=False, id__in=assigned_project_ids))
         else:
             all_trainees = list(Trainee.objects(is_active=True))
             all_attendance = list(AttendanceRecord.objects())
@@ -239,11 +242,13 @@ class AnalyticsView(APIView):
         active_batch_id = settings.batch_identifier if settings else None
 
         if active_batch_id:
-            all_trainees_ever = list(Trainee.objects(batch_id=active_batch_id))
-            active_trainee_ids = [t.id for t in all_trainees_ever if t.is_active]
-            assignments = ProjectAssignment.objects(trainee_id__in=active_trainee_ids)
-            assigned_project_ids = {a.project_id.id for a in assignments}
-            all_projects = list(Project.objects(is_active=True, id__in=assigned_project_ids))
+            try:
+                batch_obj = Batch.objects.get(batch_id=active_batch_id)
+                all_trainees_ever = list(Trainee.objects(batch_id=batch_obj))
+                all_projects = list(Project.objects(is_active=True, batch_id=batch_obj))
+            except Batch.DoesNotExist:
+                all_trainees_ever = []
+                all_projects = []
         else:
             all_projects = list(Project.objects(is_active=True))
             all_trainees_ever = list(Trainee.objects())

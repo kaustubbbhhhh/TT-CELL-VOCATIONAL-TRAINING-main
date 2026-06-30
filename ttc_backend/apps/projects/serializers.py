@@ -16,6 +16,7 @@ class ProjectSerializer(serializers.Serializer):
     stack = serializers.ListField(child=serializers.CharField(), required=False, default=[])
     created_by = serializers.CharField(read_only=True)
     is_archived = serializers.BooleanField(read_only=True)
+    batch_id = serializers.CharField(source='batch_id.batch_id', read_only=True)
     created_at = serializers.DateTimeField(read_only=True)
     updated_at = serializers.DateTimeField(read_only=True)
 

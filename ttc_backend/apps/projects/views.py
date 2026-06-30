@@ -20,6 +20,7 @@ class ProjectListCreateView(APIView):
         domain = request.query_params.get('domain', '').strip()
         status_filter = request.query_params.get('status', '').strip()
         is_archived_str = request.query_params.get('is_archived', 'false').lower()
+        batch_id = request.query_params.get('batch_id', '').strip()
         ordering = request.query_params.get('ordering', '-created_at').strip()
 
         # Build filter query
@@ -36,6 +37,22 @@ class ProjectListCreateView(APIView):
 
         query_filters['is_active'] = True
         queryset = Project.objects(**query_filters)
+
+        # Batch filtering
+        if not batch_id:
+            from apps.authentication.models import PortalSettings
+            settings = PortalSettings.objects.first()
+            if settings and settings.batch_identifier:
+                batch_id = settings.batch_identifier
+
+        if batch_id and batch_id != 'all':
+            from apps.trainees.models import Batch
+            try:
+                batch_obj = Batch.objects.get(batch_id=batch_id)
+                queryset = queryset.filter(batch_id=batch_obj)
+            except Batch.DoesNotExist:
+                # If batch doesn't exist, return empty queryset
+                queryset = queryset.filter(id=None)
 
         # Full-text search
         if q:
