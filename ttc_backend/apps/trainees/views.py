@@ -48,8 +48,9 @@ class TraineeListCreateView(APIView):
         unassigned_str = request.query_params.get('unassigned', 'false').lower()
         if unassigned_str == 'true':
             from apps.projects.models import ProjectAssignment
-            assigned_trainee_ids = ProjectAssignment.objects().distinct('trainee_id')
-            query_filters['id__nin'] = assigned_trainee_ids
+            assigned_refs = ProjectAssignment.objects().distinct('trainee_id')
+            assigned_trainee_ids = [ref.id if hasattr(ref, 'id') else ref for ref in assigned_refs]
+            query_filters['roll_number__nin'] = assigned_trainee_ids
 
         queryset = Trainee.objects(**query_filters)
 

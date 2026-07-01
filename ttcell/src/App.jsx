@@ -87,7 +87,7 @@ function AppRoutes() {
   const { user } = useAuth();
   return (
     <Routes>
-      <Route path="/" element={<PublicLayout><HomePage /></PublicLayout>} />
+      <Route path="/" element={<HomePage />} />
       <Route path="/about" element={<PublicLayout><AboutPage /></PublicLayout>} />
       <Route path="/domains" element={<PublicLayout><DomainsPage /></PublicLayout>} />
       <Route path="/contact" element={<PublicLayout><ContactPage /></PublicLayout>} />

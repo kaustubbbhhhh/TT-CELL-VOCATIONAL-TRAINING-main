@@ -33,6 +33,7 @@ export function TraineesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [domain, setDomain] = useState('All');
+  const [sectionFilter, setSectionFilter] = useState('All');
   const [activeBatchId, setActiveBatchId] = useState('');
   const [activeBatchStatus, setActiveBatchStatus] = useState('active');
 
@@ -69,9 +70,14 @@ export function TraineesPage() {
       const params = {};
       if (domain !== 'All') params.domain = domain;
       if (search.trim()) params.q = search;
+      if (sectionFilter !== 'All') params.section = sectionFilter;
 
       const res = await traineesApi.list(params);
-      setTrainees(res.data.results || res.data || []);
+      let results = res.data.results || res.data || [];
+      if (sectionFilter !== 'All') {
+        results = results.filter(t => t.section === sectionFilter);
+      }
+      setTrainees(results);
     } catch (err) {
       console.error(err);
       setToast({ open: true, message: 'Failed to load trainees.', severity: 'error' });
@@ -95,7 +101,7 @@ export function TraineesPage() {
   useEffect(() => {
     fetchActiveBatch();
     fetchTrainees();
-  }, [domain]);
+  }, [domain, sectionFilter]);
 
   const handleSearchKeyPress = (e) => {
     if (e.key === 'Enter') {
@@ -279,6 +285,9 @@ export function TraineesPage() {
         <Select size="small" value={domain} onChange={e => setDomain(e.target.value)} sx={{ minWidth: 150 }}>
           {['All', 'AI/ML', 'Web Dev', 'Cyber Sec', 'Data Sci', 'IoT', 'Embedded'].map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
         </Select>
+        <Select size="small" value={sectionFilter} onChange={e => setSectionFilter(e.target.value)} sx={{ minWidth: 120 }}>
+          {['All', 'A', 'B', 'C', 'D'].map(s => <MenuItem key={s} value={s}>{s === 'All' ? 'All Sections' : `Section ${s}`}</MenuItem>)}
+        </Select>
       </Box>
 
       <Card>
@@ -294,7 +303,6 @@ export function TraineesPage() {
                   <TableCell>Student</TableCell>
                   <TableCell>Roll No.</TableCell>
                   <TableCell>Domain</TableCell>
-                  <TableCell>Batch (Sec)</TableCell>
                   <TableCell>Phone</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
@@ -320,7 +328,6 @@ export function TraineesPage() {
                           <Typography sx={{ fontFamily: 'monospace', fontWeight: 600, fontSize: '0.8rem' }}>{s.roll_number}</Typography>
                         </TableCell>
                         <TableCell><DomainChip domain={s.domain} /></TableCell>
-                        <TableCell>{s.batch_id} ({s.section})</TableCell>
                         <TableCell>{s.phone || '—'}</TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -349,7 +356,7 @@ export function TraineesPage() {
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} align="center">
+                    <TableCell colSpan={5} align="center">
                       <Typography sx={{ color: '#7A8B99', py: 2 }}>No trainees found.</Typography>
                     </TableCell>
                   </TableRow>
@@ -527,6 +534,7 @@ export function ProjectsPage() {
     title: '',
     description: '',
     domain: 'AI/ML',
+    system_domain: 'Software',
     team: 1,
     stack: ''
   });
@@ -612,6 +620,7 @@ export function ProjectsPage() {
         title: '',
         description: '',
         domain: 'AI/ML',
+        system_domain: 'Software',
         team: 1,
         stack: ''
       });
@@ -762,7 +771,7 @@ export function ProjectsPage() {
         <DialogContent sx={{ display: 'grid', gap: 2, pt: 3, minWidth: 320 }}>
           <TextField
             label="Project Code *"
-            placeholder="e.g. TT24-AI-005"
+            placeholder="e.g. Project-xx"
             size="small"
             fullWidth
             value={newProject.project_code}
@@ -794,6 +803,16 @@ export function ProjectsPage() {
               {['AI/ML', 'Web Dev', 'Cyber Sec', 'Data Sci', 'IoT', 'Embedded'].map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
             </Select>
           </FormControl>
+          <FormControl size="small" fullWidth>
+            <InputLabel>System Domain</InputLabel>
+            <Select
+              value={newProject.system_domain}
+              label="System Domain"
+              onChange={e => setNewProject({ ...newProject, system_domain: e.target.value })}
+            >
+              {['Hardware', 'Software'].map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+            </Select>
+          </FormControl>
           <TextField
             label="Recommended Team Size"
             type="number"
@@ -802,14 +821,7 @@ export function ProjectsPage() {
             value={newProject.team}
             onChange={e => setNewProject({ ...newProject, team: parseInt(e.target.value) || 1 })}
           />
-          <TextField
-            label="Tech Stack (comma separated)"
-            placeholder="e.g. React, Python, Django, MongoDB"
-            size="small"
-            fullWidth
-            value={newProject.stack}
-            onChange={e => setNewProject({ ...newProject, stack: e.target.value })}
-          />
+          
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIsCreateOpen(false)}>Cancel</Button>

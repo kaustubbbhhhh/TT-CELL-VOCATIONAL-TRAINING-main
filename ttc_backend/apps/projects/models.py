@@ -10,6 +10,7 @@ class Project(AuditLogMixin, SoftDeleteMixin, Document):
     title = StringField(required=True)
     description = StringField(required=True)
     domain = StringField(choices=DOMAINS, required=True)
+    system_domain = StringField(choices=['Hardware', 'Software'], default='Software')
     team = IntField(default=1)  # Recommended team size
     progress = IntField(default=0, min_value=0, max_value=100)
     status = StringField(choices=PROJECT_STATUSES, default='planning')
