@@ -1,5 +1,8 @@
 import pymongo
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 print("Connecting to local database...")
 try:
@@ -9,21 +12,27 @@ try:
     db_local = client_local["ttcell_db"]
 except Exception as e:
     print("\n[ERROR] Could not connect to your local MongoDB.")
-    print("Please make sure your local MongoDB service is running (jaise humne pehle start kiya tha)!")
+    print("Please make sure your local MongoDB service is running!")
     exit(1)
 
 print("Connecting to MongoDB Atlas (Cloud)...")
+mongo_host = os.getenv("MONGO_HOST")
+if not mongo_host:
+    print("\n[ERROR] MONGO_HOST not found in .env file.")
+    exit(1)
+
 try:
-    client_atlas = pymongo.MongoClient("mongodb+srv://kaustubhraj2005_db_user:Kaustubh%4008@cluster0.pco0kkx.mongodb.net/")
-    db_atlas = client_atlas["ttcell_db"]
+    client_atlas = pymongo.MongoClient(mongo_host, serverSelectionTimeoutMS=5000)
+    client_atlas.server_info()
+    db_atlas = client_atlas.get_database() # Uses the DB defined in the connection string
 except Exception as e:
-    print("\n[ERROR] Could not connect to MongoDB Atlas. Check your internet connection.")
+    print(f"\n[ERROR] Could not connect to MongoDB Atlas: {e}")
     exit(1)
 
 collections = db_local.list_collection_names()
 
 if not collections:
-    print("\nNo data found in your local database 'ttcell_db'!")
+    print("\nNo collections found in your local database 'ttcell_db'!")
     exit(0)
 
 print(f"\nFound {len(collections)} collections in local DB. Starting data transfer...\n")
@@ -32,14 +41,16 @@ for coll_name in collections:
     local_coll = db_local[coll_name]
     atlas_coll = db_atlas[coll_name]
     
-    # Pehle cloud wali existing collection ko clear karte hain
+    docs = list(local_coll.find())
+    if not docs:
+        print(f"⏩ Local '{coll_name}' is empty. Skipping. (Cloud data not modified)")
+        continue
+    
+    # Only clear the cloud collection if we actually have data to replace it with
+    print(f"Clearing existing cloud collection: {coll_name}...")
     atlas_coll.delete_many({})
     
-    docs = list(local_coll.find())
-    if docs:
-        atlas_coll.insert_many(docs)
-        print(f"✅ Copied {len(docs)} documents into '{coll_name}'.")
-    else:
-        print(f"⏩ '{coll_name}' is empty. Skipped.")
+    atlas_coll.insert_many(docs)
+    print(f"✅ Copied {len(docs)} documents into '{coll_name}'.")
 
-print("\n🎉 Migration Complete! Aapka saara purana local data ab cloud pe aa gaya hai.")
+print("\n🎉 Migration Complete! Safely transferred local data to cloud.")
